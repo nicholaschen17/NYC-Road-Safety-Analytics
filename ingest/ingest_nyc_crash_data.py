@@ -1,32 +1,16 @@
 import os
-import requests
 import psycopg2
 import pandas as pd
-from datetime import datetime
-from dotenv import load_dotenv
 import io
+from config import get_db_config, get_source
 
-load_dotenv()
-
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
+SOURCE = get_source("crash_data")
 
 # Connect to DB
 def connect_to_db():
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
-    )
+    conn = psycopg2.connect(**get_db_config())
     return conn
 
-def close_db_connection(conn):
-    conn.close()
 
 # Columns that must be integers for raw_data (PostgreSQL INT rejects "2.0" from pandas float)
 RAW_DATA_INT_COLUMNS = [
@@ -90,7 +74,7 @@ def bulk_copy_raw_data(df):
 
     conn.commit()
     cursor.close()
-    close_db_connection(conn)
+    conn.close()
 
 def main():
     df = fetch_collisions_data()

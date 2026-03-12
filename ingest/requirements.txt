@@ -2,3 +2,8 @@ psycopg2-binary
 requests
 python-dotenv
 pandas
+pyyaml
+openmeteo-requests
+requests-cache
+retry-requests
+numpy

@@ -219,6 +219,11 @@ services:
   #   depends_on:
   #     - fastapi
 
-
-
   # Potential ML Pipeline service TBD
+
+volumes:
+  postgres_data:
+  dagster_postgres_data:
+  grafana_data:
+  parquet_store:
+  model_artifacts:
