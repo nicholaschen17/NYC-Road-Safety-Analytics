@@ -1,7 +1,8 @@
 import ijson
-import requests
 import psycopg2
 import psycopg2.extras
+import requests
+
 from shared.config import Config
 from shared.helper import Helper
 
@@ -9,18 +10,18 @@ BATCH_SIZE = 10_000
 
 # Maps Socrata colon-prefixed API keys → Postgres column names
 COLUMN_MAP = {
-    ":id":            "id",
-    ":version":       "version",
-    ":created_at":    "created_at",
-    ":updated_at":    "updated_at",
-    "dsny_storm":     "dsny_storm",
+    ":id": "id",
+    ":version": "version",
+    ":created_at": "created_at",
+    ":updated_at": "updated_at",
+    "dsny_storm": "dsny_storm",
     "date_of_report": "date_of_report",
-    "manhattan":      "manhattan",
-    "bronx":          "bronx",
-    "brooklyn":       "brooklyn",
-    "queens":         "queens",
-    "staten_island":  "staten_island",
-    "total_tons":     "total_tons",
+    "manhattan": "manhattan",
+    "bronx": "bronx",
+    "brooklyn": "brooklyn",
+    "queens": "queens",
+    "staten_island": "staten_island",
+    "total_tons": "total_tons",
 }
 COLUMNS = list(COLUMN_MAP.values())
 
@@ -54,7 +55,7 @@ def bulk_insert_json_stream(response: requests.Response, table: str):
     multi-row INSERT per batch rather than one query per row.
     """
     col_list = ", ".join(COLUMNS)
-    insert_sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"
+    insert_sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"  # nosec B608
 
     conn = psycopg2.connect(**config.get_db_config())
     try:
@@ -64,13 +65,17 @@ def bulk_insert_json_stream(response: requests.Response, table: str):
             for row in iter_json_rows(response):
                 batch.append([row.get(api_key) for api_key in COLUMN_MAP])
                 if len(batch) >= BATCH_SIZE:
-                    psycopg2.extras.execute_values(cursor, insert_sql, batch, page_size=BATCH_SIZE)
+                    psycopg2.extras.execute_values(
+                        cursor, insert_sql, batch, page_size=BATCH_SIZE
+                    )
                     total += len(batch)
                     print(f"Inserted {total} rows so far...")
                     batch = []
 
             if batch:  # flush remaining rows that didn't fill a full batch
-                psycopg2.extras.execute_values(cursor, insert_sql, batch, page_size=BATCH_SIZE)
+                psycopg2.extras.execute_values(
+                    cursor, insert_sql, batch, page_size=BATCH_SIZE
+                )
                 total += len(batch)
 
         conn.commit()
@@ -81,11 +86,13 @@ def bulk_insert_json_stream(response: requests.Response, table: str):
     finally:
         conn.close()
 
+
 if __name__ == "__main__":
     with requests.post(
         source_config["api_url"],
         headers=headers,
         stream=True,
+        timeout=60,
     ) as response:
         response.raise_for_status()
         bulk_insert_json_stream(response, source_config["table"])

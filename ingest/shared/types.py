@@ -1,5 +1,6 @@
-from typing import TypedDict
 from datetime import date
+from typing import TypedDict
+
 
 class WeatherParam(TypedDict):
     latitude: float | list[float]
@@ -7,5 +8,3 @@ class WeatherParam(TypedDict):
     start_date: date
     end_date: date
     hourly: list[str]
-
-

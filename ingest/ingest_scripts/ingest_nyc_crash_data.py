@@ -1,10 +1,12 @@
-import os
-import psycopg2
-import pandas as pd
 import io
+import os
+
+import pandas as pd
+import psycopg2
 from config import get_db_config, get_source
 
 SOURCE = get_source("crash_data")
+
 
 # Connect to DB
 def connect_to_db():
@@ -28,14 +30,20 @@ RAW_DATA_INT_COLUMNS = [
 
 def _normalize_column_names(df):
     """Lowercase and replace spaces with underscores to match schema/COPY."""
-    df = df.rename(columns=lambda c: c.strip().lower().replace(" ", "_") if isinstance(c, str) else c)
+    df = df.rename(
+        columns=lambda c: (
+            c.strip().lower().replace(" ", "_") if isinstance(c, str) else c
+        )
+    )
     return df
 
 
 def fetch_collisions_data():
     # Temporary placeholder for using collision data from csv file
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(SCRIPT_DIR))  # backend/ingest -> backend -> project
+    PROJECT_ROOT = os.path.dirname(
+        os.path.dirname(SCRIPT_DIR)
+    )  # backend/ingest -> backend -> project
     CSV_PATH = os.path.join(PROJECT_ROOT, "backend", "data", "collisions.csv")
     df = pd.read_csv(CSV_PATH)
     df = _normalize_column_names(df)
@@ -44,6 +52,7 @@ def fetch_collisions_data():
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype("int64")
     return df
+
 
 def bulk_copy_raw_data(df):
     conn = connect_to_db()
@@ -54,7 +63,8 @@ def bulk_copy_raw_data(df):
     df.to_csv(buffer, index=False, header=False, na_rep="\\N")
     buffer.seek(0)
 
-    cursor.copy_expert("""
+    cursor.copy_expert(
+        """
         COPY raw_data (
             crash_date, crash_time, borough, zip_code,
             latitude, longitude, location, on_street_name,
@@ -70,15 +80,19 @@ def bulk_copy_raw_data(df):
         )
         FROM STDIN
         WITH (FORMAT csv, NULL '\\N')
-    """, buffer)
+    """,
+        buffer,
+    )
 
     conn.commit()
     cursor.close()
     conn.close()
 
+
 def main():
     df = fetch_collisions_data()
     bulk_copy_raw_data(df)
+
 
 if __name__ == "__main__":
     main()

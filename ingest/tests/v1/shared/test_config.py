@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, mock_open
+
 from shared.config import Config
 
 MINIMAL_SOURCES_YAML = """
@@ -12,6 +12,7 @@ sources:
 
 # ── load_sources ──────────────────────────────────────────────────────────────
 
+
 class TestLoadSources:
     def test_returns_dict(self):
         config = Config()
@@ -20,10 +21,17 @@ class TestLoadSources:
     def test_contains_all_known_sources(self):
         config = Config()
         expected = [
-            "crash_data", "salt_usage_data", "bike_route_data",
-            "district_grid_data", "moving_violation_data", "speed_hump_data",
-            "speed_limits_data", "street_rating_data",
-            "traffic_volume_cnt_data", "weather_data", "zone_map_data",
+            "crash_data",
+            "salt_usage_data",
+            "bike_route_data",
+            "district_grid_data",
+            "moving_violation_data",
+            "speed_hump_data",
+            "speed_limits_data",
+            "street_rating_data",
+            "traffic_volume_cnt_data",
+            "weather_data",
+            "zone_map_data",
         ]
         for source in expected:
             assert source in config.sources, f"'{source}' missing from sources.yml"
@@ -46,6 +54,7 @@ class TestLoadSources:
 
 
 # ── get_source ────────────────────────────────────────────────────────────────
+
 
 class TestGetSource:
     def test_returns_dict_for_known_source(self):
@@ -79,40 +88,46 @@ class TestGetSource:
 
 # ── get_db_config ─────────────────────────────────────────────────────────────
 
+
 class TestGetDbConfig:
     def test_uses_postgres_primary_env_vars(self, monkeypatch):
         monkeypatch.setenv("POSTGRES_HOST", "pg-host")
         monkeypatch.setenv("POSTGRES_PORT", "5433")
-        monkeypatch.setenv("POSTGRES_DB",   "pg-db")
+        monkeypatch.setenv("POSTGRES_DB", "pg-db")
         monkeypatch.setenv("POSTGRES_USER", "pg-user")
         monkeypatch.setenv("POSTGRES_PASSWORD", "pg-pass")
 
         db = Config().get_db_config()
 
-        assert db["host"]     == "pg-host"
-        assert db["port"]     == "5433"
-        assert db["dbname"]   == "pg-db"
-        assert db["user"]     == "pg-user"
+        assert db["host"] == "pg-host"
+        assert db["port"] == "5433"
+        assert db["dbname"] == "pg-db"
+        assert db["user"] == "pg-user"
         assert db["password"] == "pg-pass"
 
     def test_falls_back_to_db_prefix_env_vars(self, monkeypatch):
-        for var in ["POSTGRES_HOST", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD"]:
+        for var in [
+            "POSTGRES_HOST",
+            "POSTGRES_DB",
+            "POSTGRES_USER",
+            "POSTGRES_PASSWORD",
+        ]:
             monkeypatch.delenv(var, raising=False)
 
-        monkeypatch.setenv("DB_HOST",     "fallback-host")
-        monkeypatch.setenv("DB_NAME",     "fallback-db")
-        monkeypatch.setenv("DB_USER",     "fallback-user")
+        monkeypatch.setenv("DB_HOST", "fallback-host")
+        monkeypatch.setenv("DB_NAME", "fallback-db")
+        monkeypatch.setenv("DB_USER", "fallback-user")
         monkeypatch.setenv("DB_PASSWORD", "fallback-pass")
 
         db = Config().get_db_config()
 
-        assert db["host"]   == "fallback-host"
+        assert db["host"] == "fallback-host"
         assert db["dbname"] == "fallback-db"
-        assert db["user"]   == "fallback-user"
+        assert db["user"] == "fallback-user"
 
     def test_port_defaults_to_5432_when_not_set(self, monkeypatch):
         monkeypatch.delenv("POSTGRES_PORT", raising=False)
-        monkeypatch.delenv("DB_PORT",       raising=False)
+        monkeypatch.delenv("DB_PORT", raising=False)
 
         db = Config().get_db_config()
 
@@ -120,7 +135,7 @@ class TestGetDbConfig:
 
     def test_postgres_port_takes_priority_over_db_port(self, monkeypatch):
         monkeypatch.setenv("POSTGRES_PORT", "5433")
-        monkeypatch.setenv("DB_PORT",       "9999")
+        monkeypatch.setenv("DB_PORT", "9999")
 
         db = Config().get_db_config()
 
@@ -128,18 +143,22 @@ class TestGetDbConfig:
 
     def test_returns_none_for_unset_credentials(self, monkeypatch):
         for var in [
-            "POSTGRES_HOST", "DB_HOST",
-            "POSTGRES_DB",   "DB_NAME",
-            "POSTGRES_USER", "DB_USER",
-            "POSTGRES_PASSWORD", "DB_PASSWORD",
+            "POSTGRES_HOST",
+            "DB_HOST",
+            "POSTGRES_DB",
+            "DB_NAME",
+            "POSTGRES_USER",
+            "DB_USER",
+            "POSTGRES_PASSWORD",
+            "DB_PASSWORD",
         ]:
             monkeypatch.delenv(var, raising=False)
 
         db = Config().get_db_config()
 
-        assert db["host"]     is None
-        assert db["dbname"]   is None
-        assert db["user"]     is None
+        assert db["host"] is None
+        assert db["dbname"] is None
+        assert db["user"] is None
         assert db["password"] is None
 
     def test_return_value_has_exactly_expected_keys(self, monkeypatch):
@@ -148,6 +167,7 @@ class TestGetDbConfig:
 
 
 # ── get_nyc_app_token ─────────────────────────────────────────────────────────
+
 
 class TestGetNycAppToken:
     def test_returns_token_when_set(self, monkeypatch):

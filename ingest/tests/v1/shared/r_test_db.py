@@ -1,17 +1,16 @@
-import pytest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 # db.py executes Config() at module level; patch psycopg2.connect so no real
 # DB connection is attempted during import or in any test.
 with patch("psycopg2.connect"):
-    from shared.db import connect_to_db, bulk_insert_from_json
+    from shared.db import bulk_insert_from_json, connect_to_db
 
 
 DB_CONFIG = {
     "host": "localhost",
     "port": "5432",
     "dbname": "testdb",
-    "user":   "testuser",
+    "user": "testuser",
     "password": "testpass",
 }
 
@@ -19,12 +18,13 @@ DB_CONFIG = {
 def _make_mock_conn():
     """Return a (mock_conn, mock_cursor) pair wired up as psycopg2 would."""
     mock_cursor = MagicMock()
-    mock_conn   = MagicMock()
+    mock_conn = MagicMock()
     mock_conn.cursor.return_value = mock_cursor
     return mock_conn, mock_cursor
 
 
 # ── connect_to_db ─────────────────────────────────────────────────────────────
+
 
 class TestConnectToDb:
     @patch("shared.db.psycopg2.connect")
@@ -90,6 +90,7 @@ class TestBulkInsertFromJson:
         mock_connect.return_value = mock_conn
 
         captured = {}
+
         def capture(sql, buf):
             captured["content"] = buf.read()
 
@@ -97,7 +98,7 @@ class TestBulkInsertFromJson:
         bulk_insert_from_json(ROWS, "raw_salt_usage_data", COLUMNS)
 
         assert "Storm 1" in captured["content"]
-        assert "14620"   in captured["content"]
+        assert "14620" in captured["content"]
         assert "Storm 2" in captured["content"]
 
     @patch("shared.db.psycopg2.connect")
@@ -107,6 +108,7 @@ class TestBulkInsertFromJson:
         mock_connect.return_value = mock_conn
 
         captured = {}
+
         def capture(sql, buf):
             captured["content"] = buf.read()
 
@@ -124,6 +126,7 @@ class TestBulkInsertFromJson:
         mock_connect.return_value = mock_conn
 
         captured = {}
+
         def capture(sql, buf):
             captured["content"] = buf.read()
 
@@ -140,11 +143,14 @@ class TestBulkInsertFromJson:
         mock_connect.return_value = mock_conn
 
         captured = {}
+
         def capture(sql, buf):
             captured["content"] = buf.read()
 
         mock_cursor.copy_expert.side_effect = capture
-        rows_with_extra = [{"id": "1", "storm": "S1", "total_tons": "10", "extra": "DROP TABLE"}]
+        rows_with_extra = [
+            {"id": "1", "storm": "S1", "total_tons": "10", "extra": "DROP TABLE"}
+        ]
         bulk_insert_from_json(rows_with_extra, "raw_salt_usage_data", COLUMNS)
 
         assert "DROP TABLE" not in captured["content"]
@@ -184,6 +190,7 @@ class TestBulkInsertFromJson:
         mock_connect.return_value = mock_conn
 
         captured = {}
+
         def capture(sql, buf):
             captured["content"] = buf.read()
 

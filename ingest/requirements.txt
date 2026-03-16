@@ -10,3 +10,10 @@ numpy
 sodapy
 ijson
 pytest
+pytest-cov
+black
+bandit
+Isort
+Absolufy-imports
+autoflake
+pyupgrade

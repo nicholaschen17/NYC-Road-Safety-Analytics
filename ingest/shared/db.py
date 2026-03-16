@@ -1,31 +1,60 @@
-import json, io, psycopg2
-import pandas as pd
-from shared.config import Config
+import ijson
+import psycopg2.extras
+import requests
+from config import Config
 
 config = Config()
 
-def connect_to_db():
+
+def iter_json_rows(response: requests.Response):
+    """
+    Incrementally parses a streaming JSON array response using ijson.
+
+    Yields one dict per row without ever loading the full payload into memory —
+    critical for multi-million row datasets. The response must be opened with
+    stream=True so the body isn't buffered upfront by requests.
+    """
+    response.raw.decode_content = True  # decompress gzip/deflate on the fly
+    for row in ijson.items(response.raw, "item"):
+        yield row
+
+
+def bulk_insert_json_stream(response: requests.Response, table: str):
+    """
+    Streams a JSON array response and bulk-inserts into Postgres in batches.
+
+    Uses ijson to parse rows incrementally (constant memory regardless of
+    response size), then flushes each batch via execute_values — a single
+    multi-row INSERT per batch rather than one query per row.
+    """
+    col_list = ", ".join(COLUMNS)
+    insert_sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"  # nosec B608
+
     conn = psycopg2.connect(**config.get_db_config())
-    return conn
+    try:
+        with conn.cursor() as cursor:
+            batch = []
+            total = 0
+            for row in iter_json_rows(response):
+                batch.append([row.get(api_key) for api_key in COLUMN_MAP])
+                if len(batch) >= BATCH_SIZE:
+                    psycopg2.extras.execute_values(
+                        cursor, insert_sql, batch, page_size=BATCH_SIZE
+                    )
+                    total += len(batch)
+                    print(f"Inserted {total} rows so far...")
+                    batch = []
 
-def bulk_insert_from_json(json_data: list[dict], table: str, columns: list[str]):
-    # 1. JSON → DataFrame
-    df = pd.DataFrame(json_data)[columns]
+            if batch:  # flush remaining rows that didn't fill a full batch
+                psycopg2.extras.execute_values(
+                    cursor, insert_sql, batch, page_size=BATCH_SIZE
+                )
+                total += len(batch)
 
-    # 2. DataFrame → in-memory CSV buffer
-    buffer = io.StringIO()
-    df.to_csv(buffer, index=False, header=False, na_rep="\\N")
-    buffer.seek(0)
-
-    # 3. Stream buffer into Postgres via COPY
-    conn = psycopg2.connect(**config.get_db_config())
-    cursor = conn.cursor()
-    cols = ", ".join(columns)
-    cursor.copy_expert(f"""
-        COPY {table} ({cols})
-        FROM STDIN
-        WITH (FORMAT csv, NULL '\\N')
-    """, buffer)
-    conn.commit()
-    cursor.close()
-    conn.close()
+        conn.commit()
+        print(f"Done. Inserted {total} total rows into '{table}'.")
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
