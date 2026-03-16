@@ -208,3 +208,4 @@ __marimo__/
 
 # Ignore data files
 ingest/data/
+.cache.sqlite
