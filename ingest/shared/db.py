@@ -25,7 +25,7 @@ class DB:
             yield row
 
     # Public method to bulk insert JSON stream into DB (Unsure about GeoJSON format)
-    def bulk_insert_json_stream(
+    def _bulk_insert_json_stream(
         self, response: requests.Response, table: str, batch_size: int
     ):
         """
@@ -79,3 +79,66 @@ class DB:
             raise
         finally:
             conn.close()
+
+    def _iter_geojson_rows(self, response):
+        response.raw.decode_content = True
+        for feature in ijson.items(response.raw, "features.item"):
+            # Flatten: merge properties with geometry as WKT/GeoJSON string
+            row = feature.get("properties") or {}
+            row["geometry"] = str(feature.get("geometry"))  # store raw as TEXT
+            yield row
+
+    def _bulk_insert_geojson_stream(self, response: requests.Response, table: str, batch_size: int):
+        row_iter = self._iter_geojson_rows(response)
+
+        first_row = next(row_iter, None)
+        if first_row is None:
+            print("No rows to insert.")
+            return
+
+        api_keys = list(first_row.keys())
+        columns = [k.lstrip(":") for k in api_keys]
+        col_list = ", ".join(columns)
+        insert_sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"  # nosec B608
+
+        conn = psycopg2.connect(**config.get_db_config())
+        try:
+            with conn.cursor() as cursor:
+                batch = [[first_row.get(k) for k in api_keys]]
+                total = 0
+                for row in row_iter:
+                    batch.append([row.get(k) for k in api_keys])
+                    if len(batch) >= batch_size:
+                        psycopg2.extras.execute_values(
+                            cursor, insert_sql, batch, page_size=batch_size
+                        )
+                        total += len(batch)
+                        print(f"Inserted {total} rows so far...")
+                        batch = []
+
+                if batch:  # flush remaining rows that didn't fill a full batch
+                    psycopg2.extras.execute_values(
+                        cursor, insert_sql, batch, page_size=batch_size
+                    )
+                    total += len(batch)
+
+            conn.commit()
+            print(f"Done. Inserted {total} total rows into '{table}'.")
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def bulk_insert(self, response: requests.Response, config_name: str):
+        # Given a response determine GeoJSON or JSON from the format key in the source config
+        format = self.config.get_source(config_name)["format"]
+        batch_size = self.config.get_source(config_name)["batch_size"]
+        table = self.config.get_source(config_name)["table"]
+
+        if format == "GeoJSON":
+            return self._bulk_insert_geojson_stream(response, table, batch_size)
+        elif format == "JSON":
+            return self._bulk_insert_json_stream(response, table, batch_size)
+        else:
+            raise ValueError(f"Invalid format: {format}")

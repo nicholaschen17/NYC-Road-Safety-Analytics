@@ -149,3 +149,156 @@ CREATE TABLE raw_crash_data (
     -- Audit column
     ingested_at                     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE raw_bike_route_data (
+    -- Socrata system metadata columns
+    id              TEXT,
+    version         TEXT,
+    created_at      TIMESTAMPTZ,
+    updated_at      TIMESTAMPTZ,
+
+    -- Source data columns
+    segmentid       TEXT,
+    bikeid          TEXT,
+    prevbikeid      TEXT,
+    status          TEXT,
+    boro            TEXT,
+    street          TEXT,
+    fromstreet      TEXT,
+    tostreet        TEXT,
+    onoffst         TEXT,
+    facilitycl      TEXT,
+    allclasses      TEXT,
+    bikedir         TEXT,
+    lanecount       NUMERIC,
+    ft_facilit      TEXT,
+    tf_facilit      TEXT,
+    ft2facilit      TEXT,
+    tf2facilit      TEXT,
+    instdate        TEXT,
+    ret_date        TEXT,
+    grnwy           TEXT,
+    gwsystem        TEXT,
+    gwsys2          TEXT,
+    spur            TEXT,
+    gwyjuris        TEXT,
+    geometry        TEXT,
+
+    -- Audit column
+    ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE raw_district_grid_data (
+    -- Socrata system metadata columns
+    id              TEXT,
+    version         TEXT,
+    created_at      TIMESTAMPTZ,
+    updated_at      TIMESTAMPTZ,
+
+    -- Source data columns
+    district        TEXT,
+    districtcode    TEXT,
+    objectid        TEXT,
+    shape_area      NUMERIC,
+    shape_length    NUMERIC,
+    geometry        TEXT,
+
+    -- Audit column
+    ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+/*
+CREATE TABLE raw_moving_violation_data (
+    -- Socrata system metadata columns
+    id              TEXT,
+    version         TEXT,
+    created_at      TIMESTAMPTZ,
+    updated_at      TIMESTAMPTZ,
+
+    -- Source data columns
+    evnt_key        TEXT,
+    violation_date  TIMESTAMP,
+    violation_time  TEXT,
+    chg_law_cd      TEXT,
+    violation_code  TEXT,
+    veh_category    TEXT,
+    reg_plate_num   TEXT,
+    reg_state_cd    TEXT,
+    city_nm         TEXT,
+    rpt_owning_cmd  TEXT,
+    x_coord_cd      NUMERIC,
+    y_coord_cd      NUMERIC,
+    latitude        NUMERIC,
+    longitude       NUMERIC,
+    location_point  TEXT,
+    juris_cd        TEXT,
+    geometry        TEXT,
+
+    -- Audit column
+    ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+*/
+
+CREATE TABLE raw_speed_limits_data (
+    -- Socrata system metadata columns
+    id              TEXT,
+    version         TEXT,
+    created_at      TIMESTAMPTZ,
+    updated_at      TIMESTAMPTZ,
+
+    -- Source data columns
+    street          TEXT,
+    postvz_sl       NUMERIC,
+    postvz_sg       TEXT,
+    shape_leng      NUMERIC,
+    geometry        TEXT,
+
+    -- Audit column
+    ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE raw_street_rating_data (
+    -- Socrata system metadata columns
+    id                          TEXT,
+    version                     TEXT,
+    created_at                  TIMESTAMPTZ,
+    updated_at                  TIMESTAMPTZ,
+
+    -- Source data columns
+    oftcode                     TEXT,
+    boroughname                 TEXT,
+    onstreetna                  TEXT,
+    fromstreet                  TEXT,
+    tostreetna                  TEXT,
+    ismultipass                 NUMERIC,
+    direction                   TEXT,
+    road_type                   TEXT,
+    systemrating                NUMERIC,
+    nonratingreason             TEXT,
+    inspection                  TIMESTAMP,
+    locationgeometry_stlength   NUMERIC,
+    geometry                    TEXT,
+
+    -- Audit column
+    ingested_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE raw_zone_map_data (
+    -- Socrata system metadata columns
+    id              TEXT,
+    version         TEXT,
+    created_at      TIMESTAMPTZ,
+    updated_at      TIMESTAMPTZ,
+
+    -- Source data columns
+    zone            TEXT,
+    zonename        TEXT,
+    borocode        TEXT,
+    objectid        TEXT,
+    shape_area      NUMERIC,
+    shape_length    NUMERIC,
+    geometry        TEXT,
+
+    -- Audit column
+    ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
