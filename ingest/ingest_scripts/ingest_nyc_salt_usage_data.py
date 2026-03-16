@@ -9,8 +9,8 @@ def get_salt_usage_data_from_api():
 
     config = Config()
     db = DB()
-    source_config = config.get_source("salt_usage_data")
-    batch_size = source_config["batch_size"]
+    config_name = "salt_usage_data"
+    source_config = config.get_source(config_name)
     app_token = config.get_nyc_app_token()
 
     headers = {"X-App-Token": app_token}
@@ -22,7 +22,7 @@ def get_salt_usage_data_from_api():
         timeout=60,
     ) as response:
         response.raise_for_status()
-        db.bulk_insert_json_stream(response, source_config["table"], batch_size)
+        db.bulk_insert(response, config_name)
 
     return response.status_code
 
