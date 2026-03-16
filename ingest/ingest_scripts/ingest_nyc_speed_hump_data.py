@@ -1,8 +1,10 @@
-from shared.config import Config
-from shared.db import DB
 import requests
 
+from shared.config import Config
+from shared.db import DB
+
 # Function to ingest speed hump data
+
 
 # Function to ingest speed hump data
 def get_speed_hump_data_from_api():
@@ -25,6 +27,7 @@ def get_speed_hump_data_from_api():
         db.bulk_insert_json_stream(response, source_config["table"], batch_size)
 
     return response.status_code
+
 
 if __name__ == "__main__":
     status_code = get_speed_hump_data_from_api()

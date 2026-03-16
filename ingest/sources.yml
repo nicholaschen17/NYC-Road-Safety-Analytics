@@ -4,12 +4,14 @@ sources:
     api_url: https://data.cityofnewyork.us/api/v3/views/h9gi-nx95/query.json
     format: json
     table: raw_crash_data
+    batch_size: 100_000
 
   salt_usage_data:
     nyc_open_data_url: https://data.cityofnewyork.us/City-Government/DSNY-Salt-Usage/tavr-zknk/about_data
     api_url: https://data.cityofnewyork.us/api/v3/views/tavr-zknk/query.json
     format: json
     table: raw_salt_usage_data
+    batch_size: 10_000
 
   bike_route_data:
     nyc_open_data_url: https://data.cityofnewyork.us/dataset/New-York-City-Bike-Routes-Map-/9e2b-mctv
@@ -34,6 +36,7 @@ sources:
     api_url: https://data.cityofnewyork.us/api/v3/views/9n6h-pt9g/query.json
     format: json
     table: raw_speed_hump_data
+    batch_size: 100_000
 
   speed_limits_data:
     nyc_open_data_url: https://data.cityofnewyork.us/Transportation/VZV_Speed-Limits/7n5j-865y
@@ -52,6 +55,7 @@ sources:
     api_url: https://data.cityofnewyork.us/api/v3/views/7ym2-wayt/query.json
     format: json
     table: raw_traffic_volume_cnt_data
+    batch_size: 100_000
 
   weather_data:
     open_mateo_url: https://open-meteo.com/en/docs/historical-weather-api

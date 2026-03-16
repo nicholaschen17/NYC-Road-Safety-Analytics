@@ -1,6 +1,8 @@
+import requests
+
 from shared.config import Config
 from shared.db import DB
-import requests
+
 
 # Function to ingest traffic volume count data
 def get_traffic_volume_cnt_data_from_api():
@@ -23,6 +25,7 @@ def get_traffic_volume_cnt_data_from_api():
         db.bulk_insert_json_stream(response, source_config["table"], batch_size)
 
     return response.status_code
+
 
 if __name__ == "__main__":
     status_code = get_traffic_volume_cnt_data_from_api()

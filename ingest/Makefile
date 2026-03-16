@@ -7,6 +7,10 @@ AUTOFLAKE  := venv/bin/autoflake
 BANDIT     := venv/bin/bandit
 INGEST_DIR := ingest_scripts
 
+# Make ingest/ the root for all Python imports so `shared` is always resolvable,
+# whether running via make targets or directly with `python3` from this directory.
+export PYTHONPATH := $(CURDIR)
+
 .DEFAULT_GOAL := help
 
 # ── environment ───────────────────────────────────────────────────────────────
