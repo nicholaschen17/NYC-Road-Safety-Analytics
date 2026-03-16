@@ -1,38 +1,29 @@
-# NYC Salt Usage
-# https://data.cityofnewyork.us/City-Government/DSNY-Salt-Usage/tavr-zknk/about_data
-
-
-# Need to match coordinates to salt usage to get the salt usage
-import pandas as pd
-from sodapy import Socrata
-
 from shared.config import Config
-from shared.helper import Helper
-
-config = Config()
-helper = Helper()
-source_config = config.get_source("salt_usage_data")
-app_token = config.get_nyc_app_token()
-
+from shared.db import DB
+import requests
 
 # Function to ingest salt usage data
-def ingest_salt_usage_data():
-    # Grabs required information to connect to the NYC Open Data API
-    api_code = helper.get_api_code(source_config["nyc_open_data_url"])
-    base_nyc_url = helper.get_nyc_url(source_config["api_url"])
+def get_salt_usage_data_from_api():
 
-    # Connects to the NYC Open Data API
-    client = Socrata(base_nyc_url, app_token=app_token)
-    results = client.get(api_code, limit=2000)
+    config = Config()
+    db = DB()
+    source_config = config.get_source("salt_usage_data")
+    batch_size = source_config["batch_size"]
+    app_token = config.get_nyc_app_token()
 
-    # Converts the results to a pandas DataFrame
-    results_df = pd.DataFrame.from_records(results)
-    print(results_df.head())
+    headers = {"X-App-Token": app_token}
 
+    with requests.post(
+        source_config["api_url"],
+        headers=headers,
+        stream=True,
+        timeout=60,
+    ) as response:
+        response.raise_for_status()
+        db.bulk_insert_json_stream(response, source_config["table"], batch_size)
 
-def main():
-    ingest_salt_usage_data()
-
+    return response.status_code
 
 if __name__ == "__main__":
-    main()
+    status_code = get_salt_usage_data_from_api()
+    print("Ingested salt usage data from API with status code: ", status_code)

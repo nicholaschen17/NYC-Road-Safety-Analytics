@@ -1,6 +1,29 @@
-# NYC Traffic Volume Counts
-# https://data.cityofnewyork.us/Transportation/Automated-Traffic-Volume-Counts/7ym2-wayt/about_data
+from shared.config import Config
+from shared.db import DB
+import requests
 
+# Function to ingest traffic volume count data
+def get_traffic_volume_cnt_data_from_api():
 
-# Crash rate = crashes / exposure (vehicle miles traveled)
-# Volume data allows for calculation of crash rate by street or intersection to identify high-risk areas
+    config = Config()
+    db = DB()
+    source_config = config.get_source("traffic_volume_cnt_data")
+    batch_size = source_config["batch_size"]
+    app_token = config.get_nyc_app_token()
+
+    headers = {"X-App-Token": app_token}
+
+    with requests.post(
+        source_config["api_url"],
+        headers=headers,
+        stream=True,
+        timeout=60,
+    ) as response:
+        response.raise_for_status()
+        db.bulk_insert_json_stream(response, source_config["table"], batch_size)
+
+    return response.status_code
+
+if __name__ == "__main__":
+    status_code = get_traffic_volume_cnt_data_from_api()
+    print("Ingested traffic volume count data from API with status code: ", status_code)
