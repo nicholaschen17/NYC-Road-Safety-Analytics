@@ -8,4 +8,5 @@ requests-cache
 retry-requests
 numpy
 sodapy
+ijson
 pytest
