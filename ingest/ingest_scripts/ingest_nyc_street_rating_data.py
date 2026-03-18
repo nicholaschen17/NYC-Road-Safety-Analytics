@@ -1,14 +1,14 @@
 import requests
 
 from shared.config import Config
-from shared.db import DB
+from db.nyc_data import NYCData
 
 
 # Function to ingest street rating data
 def get_street_rating_data_from_api():
 
     config = Config()
-    db = DB()
+    db = NYCData()
     config_name = "street_rating_data"
     source_config = config.get_source(config_name)
     app_token = config.get_nyc_app_token()
