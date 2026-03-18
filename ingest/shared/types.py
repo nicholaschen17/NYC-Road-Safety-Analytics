@@ -8,3 +8,8 @@ class WeatherParam(TypedDict):
     start_date: date
     end_date: date
     hourly: list[str]
+
+class Zone(TypedDict):
+    id: str
+    centerpoint_latitude: float
+    centerpoint_longitude: float

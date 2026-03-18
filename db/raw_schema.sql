@@ -1,5 +1,5 @@
 -- Drop all raw tables
-DROP TABLE IF EXISTS raw_salt_usage_data, raw_speed_hump_data, raw_traffic_volume_cnt_data, raw_crash_data CASCADE;
+DROP TABLE IF EXISTS raw_salt_usage_data, raw_speed_hump_data, raw_traffic_volume_cnt_data, raw_crash_data, raw_bike_route_data, raw_district_grid_data, raw_zone_map_data, raw_weather_data, raw_street_rating_data, raw_speed_limits_data CASCADE;
 
 -- Raw Tables
 CREATE TABLE raw_salt_usage_data (
@@ -182,7 +182,7 @@ CREATE TABLE raw_bike_route_data (
     gwsys2          TEXT,
     spur            TEXT,
     gwyjuris        TEXT,
-    geometry        TEXT,
+    geometry        JSONB,
 
     -- Audit column
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -201,7 +201,7 @@ CREATE TABLE raw_district_grid_data (
     objectid        TEXT,
     shape_area      NUMERIC,
     shape_length    NUMERIC,
-    geometry        TEXT,
+    geometry        JSONB,
 
     -- Audit column
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -232,7 +232,7 @@ CREATE TABLE raw_moving_violation_data (
     longitude       NUMERIC,
     location_point  TEXT,
     juris_cd        TEXT,
-    geometry        TEXT,
+    geometry        JSONB,
 
     -- Audit column
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -251,7 +251,7 @@ CREATE TABLE raw_speed_limits_data (
     postvz_sl       NUMERIC,
     postvz_sg       TEXT,
     shape_leng      NUMERIC,
-    geometry        TEXT,
+    geometry        JSONB,
 
     -- Audit column
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -277,7 +277,7 @@ CREATE TABLE raw_street_rating_data (
     nonratingreason             TEXT,
     inspection                  TIMESTAMP,
     locationgeometry_stlength   NUMERIC,
-    geometry                    TEXT,
+    geometry                    JSONB,
 
     -- Audit column
     ingested_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -297,7 +297,31 @@ CREATE TABLE raw_zone_map_data (
     objectid        TEXT,
     shape_area      NUMERIC,
     shape_length    NUMERIC,
-    geometry        TEXT,
+    geometry        JSONB,
+
+    -- Audit column
+    ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    -- Additional columns for ingestion purposes for weather data
+    centerpoint_latitude        NUMERIC DEFAULT NULL,
+    centerpoint_longitude       NUMERIC DEFAULT NULL
+);
+
+CREATE TABLE raw_weather_data (
+    -- Source data columns
+    weather_timestamp TIMESTAMP DEFAULT NULL,
+    temperature_2m  NUMERIC DEFAULT NULL,
+    precipitation   NUMERIC DEFAULT NULL,
+    weather_code    NUMERIC DEFAULT NULL,
+    rain            NUMERIC DEFAULT NULL,
+    snowfall        NUMERIC DEFAULT NULL,
+    apparent_temperature    NUMERIC DEFAULT NULL,
+    cloud_cover       NUMERIC DEFAULT NULL,
+    snow_depth        NUMERIC DEFAULT NULL,
+
+    -- Additional columns for ingestion purposes for weather data
+    centerpoint_latitude        NUMERIC DEFAULT NULL,
+    centerpoint_longitude       NUMERIC DEFAULT NULL,
 
     -- Audit column
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()

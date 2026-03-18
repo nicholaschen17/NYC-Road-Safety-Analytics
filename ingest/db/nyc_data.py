@@ -8,38 +8,10 @@ import requests
 from shared.config import Config
 
 
-class _DecimalEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, Decimal):
-            return float(o)
-        return super().default(o)
-
-config = Config()
-
-
-class DB:
+class NYCData:
     def __init__(self):
         self.config = Config()
 
-    def execute(self, query: str, params: tuple = None):
-        conn = psycopg2.connect(**self.config.get_db_config())
-        try:
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-                cursor.execute(query, params)
-                return cursor.fetchall()
-        finally:
-            conn.close()
-        
-    def execute_update(self, query: str, params: tuple):
-        conn = psycopg2.connect(**self.config.get_db_config())
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute(query, params)
-                conn.commit()
-        finally:
-            conn.close()
-
-    # Private method to iterate over JSON rows
     def _iter_json_rows(self, response: requests.Response):
         """
         Incrementally parses a streaming JSON array response using ijson.
@@ -79,7 +51,7 @@ class DB:
         col_list = ", ".join(columns)
         insert_sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"  # nosec B608
 
-        conn = psycopg2.connect(**config.get_db_config())
+        conn = psycopg2.connect(**self.config.get_db_config())
         try:
             with conn.cursor() as cursor:
                 batch = [[first_row.get(k) for k in api_keys]]
@@ -129,7 +101,7 @@ class DB:
         col_list = ", ".join(columns)
         insert_sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"  # nosec B608
 
-        conn = psycopg2.connect(**config.get_db_config())
+        conn = psycopg2.connect(**self.config.get_db_config())
         try:
             with conn.cursor() as cursor:
                 batch = [[first_row.get(k) for k in api_keys]]
@@ -170,3 +142,10 @@ class DB:
             return self._bulk_insert_json_stream(response, table, batch_size)
         else:
             raise ValueError(f"Invalid format: {format}")
+
+
+class _DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            return float(o)
+        return super().default(o)
