@@ -1,7 +1,7 @@
-import ijson
 import json
 from decimal import Decimal
 
+import ijson
 import psycopg2.extras
 import requests
 
@@ -13,6 +13,7 @@ class _DecimalEncoder(json.JSONEncoder):
         if isinstance(o, Decimal):
             return float(o)
         return super().default(o)
+
 
 config = Config()
 
@@ -29,7 +30,7 @@ class DB:
                 return cursor.fetchall()
         finally:
             conn.close()
-        
+
     def execute_update(self, query: str, params: tuple):
         conn = psycopg2.connect(**self.config.get_db_config())
         try:
@@ -116,7 +117,9 @@ class DB:
             row["geometry"] = json.dumps(feature.get("geometry"), cls=_DecimalEncoder)
             yield row
 
-    def _bulk_insert_geojson_stream(self, response: requests.Response, table: str, batch_size: int):
+    def _bulk_insert_geojson_stream(
+        self, response: requests.Response, table: str, batch_size: int
+    ):
         row_iter = self._iter_geojson_rows(response)
 
         first_row = next(row_iter, None)

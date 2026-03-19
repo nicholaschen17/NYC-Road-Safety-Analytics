@@ -2,7 +2,7 @@
 DROP TABLE IF EXISTS raw_salt_usage_data, raw_speed_hump_data, raw_traffic_volume_cnt_data, raw_crash_data, raw_bike_route_data, raw_district_grid_data, raw_zone_map_data, raw_weather_data, raw_street_rating_data, raw_speed_limits_data CASCADE;
 
 -- Raw Tables
-CREATE TABLE raw_salt_usage_data (
+CREATE TABLE IF NOT EXISTS raw_salt_usage_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -24,7 +24,7 @@ CREATE TABLE raw_salt_usage_data (
 );
 
 
-CREATE TABLE raw_speed_hump_data (
+CREATE TABLE IF NOT EXISTS raw_speed_hump_data (
     -- Socrata system metadata columns
     id                          TEXT,
     version                     TEXT,
@@ -80,7 +80,7 @@ CREATE TABLE raw_speed_hump_data (
     ingested_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE raw_traffic_volume_cnt_data (
+CREATE TABLE IF NOT EXISTS raw_traffic_volume_cnt_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -108,7 +108,7 @@ CREATE TABLE raw_traffic_volume_cnt_data (
 );
 
 
-CREATE TABLE raw_crash_data (
+CREATE TABLE IF NOT EXISTS raw_crash_data (
     -- Socrata system metadata columns
     id                              TEXT,
     version                         TEXT,
@@ -150,7 +150,7 @@ CREATE TABLE raw_crash_data (
     ingested_at                     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE raw_bike_route_data (
+CREATE TABLE IF NOT EXISTS raw_bike_route_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -188,7 +188,7 @@ CREATE TABLE raw_bike_route_data (
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE raw_district_grid_data (
+CREATE TABLE IF NOT EXISTS raw_district_grid_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -207,8 +207,7 @@ CREATE TABLE raw_district_grid_data (
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-/*
-CREATE TABLE raw_moving_violation_data (
+CREATE TABLE IF NOT EXISTS raw_moving_violation_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -237,9 +236,8 @@ CREATE TABLE raw_moving_violation_data (
     -- Audit column
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-*/
 
-CREATE TABLE raw_speed_limits_data (
+CREATE TABLE IF NOT EXISTS raw_speed_limits_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -257,7 +255,7 @@ CREATE TABLE raw_speed_limits_data (
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE raw_street_rating_data (
+CREATE TABLE IF NOT EXISTS raw_street_rating_data (
     -- Socrata system metadata columns
     id                          TEXT,
     version                     TEXT,
@@ -283,7 +281,7 @@ CREATE TABLE raw_street_rating_data (
     ingested_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE raw_zone_map_data (
+CREATE TABLE IF NOT EXISTS raw_zone_map_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -307,7 +305,7 @@ CREATE TABLE raw_zone_map_data (
     centerpoint_longitude       NUMERIC DEFAULT NULL
 );
 
-CREATE TABLE raw_weather_data (
+CREATE TABLE IF NOT EXISTS raw_weather_data (
     -- Source data columns
     weather_timestamp TIMESTAMP DEFAULT NULL,
     temperature_2m  NUMERIC DEFAULT NULL,

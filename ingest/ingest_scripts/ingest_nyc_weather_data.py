@@ -5,26 +5,25 @@ import pandas as pd
 import requests_cache
 from retry_requests import retry
 
-from shared.config import Config
-from shared.db import DB
-from shared.types import WeatherParam, Zone
 from db.weather_data import WeatherData
-
-
+from shared.config import Config
+from shared.types import WeatherParam, Zone
 
 
 def get_latest_weather_data_for_zone(zone: Zone) -> datetime:
     weather_data = WeatherData()
     return weather_data.get_latest_weather_data_for_zone(zone).date()
 
+
 def get_zones() -> list[Zone]:
     weather_data = WeatherData()
     return weather_data.get_zones()
 
+
 def generate_weather_params(zone: Zone) -> WeatherParam:
     return WeatherParam(
-        latitude=zone['centerpoint_latitude'],
-        longitude=zone['centerpoint_longitude'],
+        latitude=zone["centerpoint_latitude"],
+        longitude=zone["centerpoint_longitude"],
         start_date=get_latest_weather_data_for_zone(zone),
         end_date=date.today(),
         hourly=[
@@ -38,6 +37,7 @@ def generate_weather_params(zone: Zone) -> WeatherParam:
             "snow_depth",
         ],
     )
+
 
 def retrieve_weather_data(weather_param: WeatherParam) -> pd.DataFrame:
     config = Config()
@@ -59,8 +59,8 @@ def retrieve_weather_data(weather_param: WeatherParam) -> pd.DataFrame:
     hourly_apparent_temperature = hourly.Variables(5).ValuesAsNumpy()
     hourly_cloud_cover = hourly.Variables(6).ValuesAsNumpy()
     hourly_snow_depth = hourly.Variables(7).ValuesAsNumpy()
-    hourly_centerpoint_latitude = weather_param['latitude']
-    hourly_centerpoint_longitude = weather_param['longitude']
+    hourly_centerpoint_latitude = weather_param["latitude"]
+    hourly_centerpoint_longitude = weather_param["longitude"]
 
     hourly_data = {
         "date": pd.date_range(
@@ -85,9 +85,11 @@ def retrieve_weather_data(weather_param: WeatherParam) -> pd.DataFrame:
     print("\nHourly data\n", hourly_dataframe)
     return hourly_dataframe
 
+
 def ingest_weather_data(hourly_dataframe: pd.DataFrame):
     weather_data = WeatherData()
     weather_data.ingest_weather_data(hourly_dataframe)
+
 
 def main():
     zones = get_zones()

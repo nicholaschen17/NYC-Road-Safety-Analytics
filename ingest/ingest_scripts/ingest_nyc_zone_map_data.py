@@ -1,9 +1,9 @@
 import requests
 from shapely.geometry import shape
 
+from db.nyc_data import NYCData
 from shared.config import Config
 from shared.db import DB
-from db.nyc_data import NYCData
 
 
 # Function to ingest street rating data
@@ -31,11 +31,13 @@ def get_zone_map_data_from_api():
 
 # Function to populate centerpoint zone data for each zone in the raw_zone_map_data table
 def populate_centerpoint_zone_data():
-    db = DB()  # DB used here for execute/execute_update — NYCData is for bulk_insert only
+    db = (
+        DB()
+    )  # DB used here for execute/execute_update — NYCData is for bulk_insert only
     config = Config()
     table = config.get_source("zone_map_data")["table"]
 
-    query = f"SELECT id, geometry, zonename FROM {table}"
+    query = f"SELECT id, geometry, zonename FROM {table}"  # nosec B608
     zones = db.execute(query)
 
     total_zones = len(zones)
@@ -47,18 +49,22 @@ def populate_centerpoint_zone_data():
     for zone in zones:
         try:
             try:
-                geometry = shape(zone['geometry'])
+                geometry = shape(zone["geometry"])
             except Exception as e:
                 print(f"Error parsing geometry for {zone['zonename']}: {e}")
                 continue
             centerpoint = geometry.representative_point()
 
             # Add lat and long of centerpoint to raw_zone_map_data table
-            query = f"UPDATE {table} SET centerpoint_latitude = %s, centerpoint_longitude = %s WHERE id = %s"
-            db.execute_update(query, (centerpoint.y, centerpoint.x, zone['id']))
-            print(f"Added centerpoint latitude {centerpoint.y} and longitude {centerpoint.x} to {zone['zonename']}")
+            query = f"UPDATE {table} SET centerpoint_latitude = %s, centerpoint_longitude = %s WHERE id = %s"  # nosec B608
+            db.execute_update(query, (centerpoint.y, centerpoint.x, zone["id"]))
+            print(
+                f"Added centerpoint latitude {centerpoint.y} and longitude {centerpoint.x} to {zone['zonename']}"
+            )
         except Exception as e:
-            print(f"Error adding centerpoint latitude {centerpoint.y} and longitude {centerpoint.x} to {zone['zonename']}: {e}")
+            print(
+                f"Error adding centerpoint latitude {centerpoint.y} and longitude {centerpoint.x} to {zone['zonename']}: {e}"
+            )
             continue
 
 

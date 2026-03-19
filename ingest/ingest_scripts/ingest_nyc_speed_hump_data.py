@@ -1,7 +1,7 @@
 import requests
 
-from shared.config import Config
 from db.nyc_data import NYCData
+from shared.config import Config
 
 
 # Function to ingest speed hump data
