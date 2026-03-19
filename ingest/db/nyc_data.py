@@ -46,7 +46,7 @@ class NYCData:
             print("No rows to insert.")
             return
 
-        api_keys = list(first_row.keys())
+        api_keys = [k for k in first_row.keys() if "@" not in k]
         columns = [k.lstrip(":") for k in api_keys]
         col_list = ", ".join(columns)
         insert_sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"  # nosec B608
@@ -96,7 +96,7 @@ class NYCData:
             print("No rows to insert.")
             return
 
-        api_keys = list(first_row.keys())
+        api_keys = [k for k in first_row.keys() if "@" not in k]
         columns = [k.lstrip(":") for k in api_keys]
         col_list = ", ".join(columns)
         insert_sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"  # nosec B608

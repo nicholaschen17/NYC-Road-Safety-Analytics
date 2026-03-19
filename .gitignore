@@ -209,3 +209,4 @@ __marimo__/
 # Ignore data files
 ingest/data/
 .cache.sqlite
+.tmp_dagster_home_*
