@@ -1,11 +1,10 @@
 venv/
 __pycache__/
 *.pyc
-.env
-ingest/data/
 .pytest_cache/
 .cache.sqlite
 dagster/.tmp_dagster_home_*
 tests/
 Makefile
 README.md
+.env

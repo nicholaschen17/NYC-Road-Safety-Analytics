@@ -1,11 +1,11 @@
 # docker-compose.yml to cover the 7 services: 
 # Postgres w/ PostGIS and DuckDB, React, FastAPI, Ingest, Data, ML, API
-version: '3.9'
-
 services:
   # Crash Data Postgres w/ PostGIS and DuckDB
   postgres:
-    image: postgis/postgis:15-3.3
+    build:
+      context: ./db
+      dockerfile: Dockerfile
     container_name: crash_data_postgres
     restart: unless-stopped
     environment:
@@ -13,7 +13,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - crash_net
@@ -28,7 +28,7 @@ services:
 
   # Dagster Postgres for DAGster metadata
   dagster_postgres:
-    image: postgres:15
+    image: postgres:18
     container_name: dagster_postgres
     restart: unless-stopped
     environment:
@@ -36,7 +36,7 @@ services:
       POSTGRES_PASSWORD: ${DAGSTER_PG_PASSWORD}
       POSTGRES_DB: ${DAGSTER_PG_DB}
     volumes:
-      - dagster_postgres_data:/var/lib/postgresql/data
+      - dagster_postgres_data:/var/lib/postgresql
     networks:
       - crash_net
     healthcheck:
@@ -45,26 +45,32 @@ services:
       timeout: 5s
       retries: 5
 
-  # Dagster webserver (UI)
   dagster_webserver:
     build:
-      context: ./dagster
+      context: ./ingest
       dockerfile: Dockerfile
     container_name: dagster_webserver
     restart: unless-stopped
-    entrypoint: ["dagster-webserver", "-h", "0.0.0.0", "-p", "3001"]
+    entrypoint:
+      [
+        "dagster-webserver",
+        "-h", "0.0.0.0",
+        "-p", "3001",
+        "-w", "/app/workspace.yaml",
+      ]
     environment:
+      DAGSTER_HOME: /app
       DAGSTER_PG_HOST: dagster_postgres
-      DAGSTER_PG_PORT: 5432
+      DAGSTER_PG_PORT: "5432"
       DAGSTER_PG_USER: ${DAGSTER_PG_USER}
       DAGSTER_PG_PASSWORD: ${DAGSTER_PG_PASSWORD}
       DAGSTER_PG_DB: ${DAGSTER_PG_DB}
-      # Ingest + DBT connection info passed through for asset execution
       POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
+      POSTGRES_PORT: "5432"
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      NYC_APP_TOKEN: ${NYC_APP_TOKEN}
     ports:
       - "3001:3001"
     networks:
@@ -72,36 +78,36 @@ services:
     depends_on:
       dagster_postgres:
         condition: service_healthy
-    volumes:
-      - ./dagster:/app
 
-  # Dagster daemon (runs schedules + sensors)
   dagster_daemon:
     build:
-      context: ./dagster
+      context: ./ingest
       dockerfile: Dockerfile
     container_name: dagster_daemon
     restart: unless-stopped
-    entrypoint: ["dagster-daemon", "run"]
+    entrypoint:
+      [
+        "dagster-daemon", "run",
+        "-w", "/app/workspace.yaml",
+      ]
     environment:
+      DAGSTER_HOME: /app
       DAGSTER_PG_HOST: dagster_postgres
-      DAGSTER_PG_PORT: 5432
+      DAGSTER_PG_PORT: "5432"
       DAGSTER_PG_USER: ${DAGSTER_PG_USER}
       DAGSTER_PG_PASSWORD: ${DAGSTER_PG_PASSWORD}
       DAGSTER_PG_DB: ${DAGSTER_PG_DB}
       POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
+      POSTGRES_PORT: "5432"
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      NYC_APP_TOKEN: ${NYC_APP_TOKEN}
     networks:
       - crash_net
     depends_on:
       dagster_postgres:
         condition: service_healthy
-    volumes:
-      - ./dagster:/app
-
 
   # Ingest service
   ingest:
@@ -227,3 +233,5 @@ volumes:
   grafana_data:
   parquet_store:
   model_artifacts:
+networks:
+  crash_net:

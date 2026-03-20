@@ -1,5 +1,5 @@
 -- Drop all raw tables
-DROP TABLE IF EXISTS raw_salt_usage_data, raw_speed_hump_data, raw_traffic_volume_cnt_data, raw_crash_data, raw_bike_route_data, raw_district_grid_data, raw_zone_map_data, raw_weather_data, raw_street_rating_data, raw_speed_limits_data CASCADE;
+DROP TABLE IF EXISTS raw_salt_usage_data, raw_speed_hump_data, raw_traffic_volume_cnt_data, raw_crash_data, raw_bike_route_data, raw_district_grid_data, raw_zone_map_data, raw_weather_data, raw_street_rating_data, raw_speed_limits_data;
 
 -- Raw Tables
 CREATE TABLE IF NOT EXISTS raw_salt_usage_data (
