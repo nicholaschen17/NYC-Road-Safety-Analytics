@@ -1,0 +1,257 @@
+
+<style>
+  .dash { font-family: var(--font-sans); color: var(--color-text-primary); }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:0.5px solid var(--color-border-tertiary); background:var(--color-background-primary); }
+  .topbar-title { font-size:15px; font-weight:500; }
+  .topbar-meta { font-size:12px; color:var(--color-text-secondary); }
+  .filters { display:flex; gap:10px; padding:10px 16px; border-bottom:0.5px solid var(--color-border-tertiary); background:var(--color-background-secondary); flex-wrap:wrap; align-items:center; }
+  .filter-label { font-size:12px; color:var(--color-text-secondary); margin-right:2px; }
+  .pill-group { display:flex; gap:6px; }
+  .pill { font-size:12px; padding:4px 10px; border-radius:20px; border:0.5px solid var(--color-border-secondary); cursor:pointer; background:var(--color-background-primary); color:var(--color-text-secondary); }
+  .pill.active { background:var(--color-background-info); color:var(--color-text-info); border-color:var(--color-border-info); }
+  .body { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); gap:12px; padding:12px 16px; }
+  .map-panel { background:var(--color-background-secondary); border-radius:var(--border-radius-lg); border:0.5px solid var(--color-border-tertiary); overflow:hidden; }
+  .map-header { padding:10px 14px; border-bottom:0.5px solid var(--color-border-tertiary); display:flex; justify-content:space-between; align-items:center; }
+  .map-header-title { font-size:13px; font-weight:500; }
+  .map-body { position:relative; height:320px; background:#e8e4dc; }
+  .map-placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; }
+  .map-grid { position:absolute; inset:0; opacity:0.18; }
+  .heat-dot { position:absolute; border-radius:50%; opacity:0.75; }
+  .map-legend { position:absolute; bottom:10px; left:10px; background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-md); padding:8px 10px; font-size:11px; color:var(--color-text-secondary); }
+  .legend-row { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .right-col { display:flex; flex-direction:column; gap:10px; }
+  .metric-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .metric-card { background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:10px 12px; }
+  .metric-label { font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; }
+  .metric-val { font-size:22px; font-weight:500; }
+  .metric-sub { font-size:11px; color:var(--color-text-secondary); margin-top:2px; }
+  .metric-up { color:var(--color-text-danger); }
+  .metric-dn { color:var(--color-text-success); }
+  .panel { background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); overflow:hidden; }
+  .panel-header { padding:9px 12px; border-bottom:0.5px solid var(--color-border-tertiary); font-size:13px; font-weight:500; display:flex; justify-content:space-between; align-items:center; }
+  .panel-sub { font-size:11px; color:var(--color-text-secondary); font-weight:400; }
+  .hotspot-row { display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:0.5px solid var(--color-border-tertiary); cursor:pointer; }
+  .hotspot-row:hover { background:var(--color-background-secondary); }
+  .hotspot-row:last-child { border-bottom:none; }
+  .hs-rank { font-size:11px; font-weight:500; color:var(--color-text-secondary); width:18px; }
+  .hs-name { font-size:13px; flex:1; }
+  .hs-zone { font-size:11px; color:var(--color-text-secondary); }
+  .risk-bar-wrap { width:70px; height:6px; background:var(--color-border-tertiary); border-radius:3px; overflow:hidden; }
+  .risk-bar { height:100%; border-radius:3px; }
+  .risk-high { background:#E24B4A; }
+  .risk-med { background:#EF9F27; }
+  .risk-low { background:#639922; }
+  .badge { font-size:10px; padding:2px 7px; border-radius:10px; font-weight:500; }
+  .badge-danger { background:var(--color-background-danger); color:var(--color-text-danger); }
+  .badge-warning { background:var(--color-background-warning); color:var(--color-text-warning); }
+  .badge-success { background:var(--color-background-success); color:var(--color-text-success); }
+  .sparkrow { display:flex; align-items:center; padding:8px 12px; gap:10px; border-bottom:0.5px solid var(--color-border-tertiary); }
+  .sparkrow:last-child { border-bottom:none; }
+  .spark-label { font-size:12px; flex:1; }
+  .spark-svg { flex-shrink:0; }
+  .bottom-strip { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:0 16px 14px; }
+  .model-stat { background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:10px 14px; }
+  .model-stat-title { font-size:12px; color:var(--color-text-secondary); margin-bottom:8px; font-weight:500; }
+  .model-pills { display:flex; gap:8px; flex-wrap:wrap; }
+  .model-pill { font-size:11px; padding:3px 9px; border-radius:10px; border:0.5px solid var(--color-border-secondary); color:var(--color-text-secondary); }
+  .model-pill.active { background:var(--color-background-info); color:var(--color-text-info); border-color:var(--color-border-info); }
+  .perf-row { display:flex; justify-content:space-between; font-size:12px; padding:3px 0; border-bottom:0.5px solid var(--color-border-tertiary); }
+  .perf-row:last-child { border-bottom:none; }
+  .perf-val { font-weight:500; }
+</style>
+
+<div class="dash">
+  <!-- Top bar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">NYC crash hotspot intelligence</div>
+      <div class="topbar-meta">Model: XGBoost v2.1 · Last run: today 06:00 · Grid: 500m × 500m</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="pill active" onclick="this.classList.toggle('active')">Live risk</button>
+      <button class="pill" onclick="this.classList.toggle('active')">Historical</button>
+      <button class="pill" onclick="this.classList.toggle('active')">Forecast 24h</button>
+    </div>
+  </div>
+
+  <!-- Filter strip -->
+  <div class="filters">
+    <span class="filter-label">Borough</span>
+    <div class="pill-group">
+      <span class="pill active">All</span>
+      <span class="pill">Manhattan</span>
+      <span class="pill">Brooklyn</span>
+      <span class="pill">Queens</span>
+      <span class="pill">Bronx</span>
+      <span class="pill">Staten Island</span>
+    </div>
+    <span style="margin-left:8px" class="filter-label">Time window</span>
+    <div class="pill-group">
+      <span class="pill active">7 days</span>
+      <span class="pill">30 days</span>
+      <span class="pill">90 days</span>
+    </div>
+    <span style="margin-left:8px" class="filter-label">Conditions</span>
+    <div class="pill-group">
+      <span class="pill">Wet road</span>
+      <span class="pill">Snow/ice</span>
+      <span class="pill">Peak hours</span>
+    </div>
+  </div>
+
+  <!-- Main body -->
+  <div class="body">
+    <!-- Map panel -->
+    <div class="map-panel">
+      <div class="map-header">
+        <span class="map-header-title">Predicted risk heatmap · NYC grid</span>
+        <span class="panel-sub">Click a cell to inspect features</span>
+      </div>
+      <div class="map-body">
+        <!-- Fake grid lines -->
+        <svg class="map-grid" width="100%" height="100%">
+          <defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#555" stroke-width="0.5"/></pattern></defs>
+          <rect width="100%" height="100%" fill="url(#grid)"/>
+        </svg>
+        <!-- Simulated borough outlines as rough paths -->
+        <svg style="position:absolute;inset:0;width:100%;height:100%">
+          <path d="M80,60 L180,40 L260,70 L280,140 L220,200 L160,210 L90,170 Z" fill="none" stroke="#aaa8a0" stroke-width="1" opacity="0.5"/>
+          <path d="M160,210 L280,140 L340,180 L370,260 L300,310 L210,300 Z" fill="none" stroke="#aaa8a0" stroke-width="1" opacity="0.5"/>
+          <path d="M280,140 L400,90 L460,130 L440,200 L370,260 Z" fill="none" stroke="#aaa8a0" stroke-width="1" opacity="0.5"/>
+        </svg>
+        <!-- Heat dots (simulating hotspot cells) -->
+        <div class="heat-dot" style="width:52px;height:52px;background:radial-gradient(circle,#E24B4A,transparent);top:80px;left:190px;"></div>
+        <div class="heat-dot" style="width:44px;height:44px;background:radial-gradient(circle,#E24B4A,transparent);top:130px;left:230px;"></div>
+        <div class="heat-dot" style="width:38px;height:38px;background:radial-gradient(circle,#EF9F27,transparent);top:55px;left:135px;"></div>
+        <div class="heat-dot" style="width:34px;height:34px;background:radial-gradient(circle,#EF9F27,transparent);top:170px;left:160px;"></div>
+        <div class="heat-dot" style="width:28px;height:28px;background:radial-gradient(circle,#EF9F27,transparent);top:200px;left:290px;"></div>
+        <div class="heat-dot" style="width:24px;height:24px;background:radial-gradient(circle,#639922,transparent);top:250px;left:100px;"></div>
+        <div class="heat-dot" style="width:44px;height:44px;background:radial-gradient(circle,#E24B4A,transparent);top:60px;left:310px;"></div>
+        <!-- Selected cell indicator -->
+        <div style="position:absolute;top:82px;left:192px;width:24px;height:24px;border:2px solid #E24B4A;border-radius:3px;background:transparent;"></div>
+        <!-- Tooltip -->
+        <div style="position:absolute;top:50px;left:218px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:7px 10px;font-size:11px;box-shadow:none;min-width:130px;">
+          <div style="font-weight:500;font-size:12px;margin-bottom:3px;">Grid 4812 · Midtown</div>
+          <div style="color:var(--color-text-secondary);">Risk score <span style="color:#E24B4A;font-weight:500;">0.87</span></div>
+          <div style="color:var(--color-text-secondary);">Crashes 7d: 12</div>
+          <div style="color:var(--color-text-secondary);">Wet road · peak</div>
+        </div>
+        <!-- Legend -->
+        <div class="map-legend">
+          <div class="legend-row"><div class="legend-dot" style="background:#E24B4A;"></div>High risk</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#EF9F27;"></div>Medium risk</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#639922;"></div>Low risk</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="right-col">
+      <!-- Metric cards -->
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">High-risk zones</div>
+          <div class="metric-val">38</div>
+          <div class="metric-sub metric-up">↑ 4 vs last week</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Crashes (7d)</div>
+          <div class="metric-val">214</div>
+          <div class="metric-sub metric-dn">↓ 8 vs last week</div>
+        </div>
+      </div>
+      <div class="metric-row">
+        <div class="metric-card">
+          <div class="metric-label">Model accuracy</div>
+          <div class="metric-val">84%</div>
+          <div class="metric-sub">Precision @ 0.5</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Alert zones</div>
+          <div class="metric-val">7</div>
+          <div class="metric-sub metric-up">Forecast spike 24h</div>
+        </div>
+      </div>
+
+      <!-- Top hotspots table -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>Top hotspots</span>
+          <span class="panel-sub">by predicted risk score</span>
+        </div>
+        <div class="hotspot-row">
+          <span class="hs-rank">1</span>
+          <div style="flex:1"><div class="hs-name">Atlantic Ave / 4th Ave</div><div class="hs-zone">Brooklyn · Zone 14</div></div>
+          <div class="risk-bar-wrap"><div class="risk-bar risk-high" style="width:90%"></div></div>
+          <span class="badge badge-danger">0.91</span>
+        </div>
+        <div class="hotspot-row">
+          <span class="hs-rank">2</span>
+          <div style="flex:1"><div class="hs-name">Queens Blvd / Union Tpk</div><div class="hs-zone">Queens · Zone 27</div></div>
+          <div class="risk-bar-wrap"><div class="risk-bar risk-high" style="width:85%"></div></div>
+          <span class="badge badge-danger">0.87</span>
+        </div>
+        <div class="hotspot-row">
+          <span class="hs-rank">3</span>
+          <div style="flex:1"><div class="hs-name">Grand Concourse / 161st</div><div class="hs-zone">Bronx · Zone 8</div></div>
+          <div class="risk-bar-wrap"><div class="risk-bar risk-high" style="width:78%"></div></div>
+          <span class="badge badge-danger">0.81</span>
+        </div>
+        <div class="hotspot-row">
+          <span class="hs-rank">4</span>
+          <div style="flex:1"><div class="hs-name">34th St / 8th Ave</div><div class="hs-zone">Manhattan · Zone 3</div></div>
+          <div class="risk-bar-wrap"><div class="risk-bar risk-med" style="width:64%"></div></div>
+          <span class="badge badge-warning">0.67</span>
+        </div>
+        <div class="hotspot-row">
+          <span class="hs-rank">5</span>
+          <div style="flex:1"><div class="hs-name">Hylan Blvd / Richmond</div><div class="hs-zone">Staten Is · Zone 2</div></div>
+          <div class="risk-bar-wrap"><div class="risk-bar risk-med" style="width:55%"></div></div>
+          <span class="badge badge-warning">0.58</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom strip: contributing features + model perf -->
+  <div class="bottom-strip">
+    <div class="model-stat">
+      <div class="model-stat-title">Top contributing features (selected cell)</div>
+      <div class="sparkrow"><span class="spark-label">Crash rate 30d</span>
+        <svg class="spark-svg" width="70" height="20">
+          <polyline points="0,18 14,15 28,10 42,8 56,4 70,2" fill="none" stroke="#E24B4A" stroke-width="1.5"/>
+        </svg>
+        <span style="font-size:11px;font-weight:500;">0.41</span>
+      </div>
+      <div class="sparkrow"><span class="spark-label">Traffic volume</span>
+        <svg class="spark-svg" width="70" height="20">
+          <polyline points="0,12 14,8 28,14 42,6 56,10 70,4" fill="none" stroke="#BA7517" stroke-width="1.5"/>
+        </svg>
+        <span style="font-size:11px;font-weight:500;">0.28</span>
+      </div>
+      <div class="sparkrow"><span class="spark-label">Wet road probability</span>
+        <svg class="spark-svg" width="70" height="20">
+          <polyline points="0,16 14,14 28,16 42,12 56,10 70,8" fill="none" stroke="#185FA5" stroke-width="1.5"/>
+        </svg>
+        <span style="font-size:11px;font-weight:500;">0.18</span>
+      </div>
+      <div class="sparkrow" style="border-bottom:none"><span class="spark-label">Moving violations</span>
+        <svg class="spark-svg" width="70" height="20">
+          <polyline points="0,14 14,16 28,12 42,10 56,12 70,8" fill="none" stroke="#3B6D11" stroke-width="1.5"/>
+        </svg>
+        <span style="font-size:11px;font-weight:500;">0.13</span>
+      </div>
+    </div>
+    <div class="model-stat">
+      <div class="model-stat-title">Model performance · last eval</div>
+      <div class="perf-row"><span>Precision</span><span class="perf-val">0.84</span></div>
+      <div class="perf-row"><span>Recall</span><span class="perf-val">0.79</span></div>
+      <div class="perf-row"><span>AUC-ROC</span><span class="perf-val">0.91</span></div>
+      <div class="perf-row"><span>F1 score</span><span class="perf-val">0.81</span></div>
+      <div class="perf-row" style="margin-top:8px; border-bottom:none"><span style="font-size:11px;color:var(--color-text-secondary);">Active model</span>
+        <span class="model-pill active" style="font-size:11px;">XGBoost v2.1</span>
+      </div>
+    </div>
+  </div>
+</div>

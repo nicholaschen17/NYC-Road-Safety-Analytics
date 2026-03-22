@@ -1,8 +1,10 @@
--- Drop all raw tables
-DROP TABLE IF EXISTS raw_salt_usage_data, raw_speed_hump_data, raw_traffic_volume_cnt_data, raw_crash_data, raw_bike_route_data, raw_district_grid_data, raw_zone_map_data, raw_weather_data, raw_street_rating_data, raw_speed_limits_data;
+CREATE SCHEMA IF NOT EXISTS raw;
+
+-- Drop all raw tables (schema raw)
+DROP TABLE IF EXISTS raw.salt_usage_data, raw.speed_hump_data, raw.traffic_volume_cnt_data, raw.crash_data, raw.bike_route_data, raw.district_grid_data, raw.zone_map_data, raw.weather_data, raw.street_rating_data, raw.speed_limits_data, raw.moving_violation_data;
 
 -- Raw Tables
-CREATE TABLE IF NOT EXISTS raw_salt_usage_data (
+CREATE TABLE IF NOT EXISTS raw.salt_usage_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -24,7 +26,7 @@ CREATE TABLE IF NOT EXISTS raw_salt_usage_data (
 );
 
 
-CREATE TABLE IF NOT EXISTS raw_speed_hump_data (
+CREATE TABLE IF NOT EXISTS raw.speed_hump_data (
     -- Socrata system metadata columns
     id                          TEXT,
     version                     TEXT,
@@ -80,7 +82,7 @@ CREATE TABLE IF NOT EXISTS raw_speed_hump_data (
     ingested_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS raw_traffic_volume_cnt_data (
+CREATE TABLE IF NOT EXISTS raw.traffic_volume_cnt_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -108,7 +110,7 @@ CREATE TABLE IF NOT EXISTS raw_traffic_volume_cnt_data (
 );
 
 
-CREATE TABLE IF NOT EXISTS raw_crash_data (
+CREATE TABLE IF NOT EXISTS raw.crash_data (
     -- Socrata system metadata columns
     id                              TEXT,
     version                         TEXT,
@@ -150,7 +152,7 @@ CREATE TABLE IF NOT EXISTS raw_crash_data (
     ingested_at                     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS raw_bike_route_data (
+CREATE TABLE IF NOT EXISTS raw.bike_route_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -188,7 +190,7 @@ CREATE TABLE IF NOT EXISTS raw_bike_route_data (
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS raw_district_grid_data (
+CREATE TABLE IF NOT EXISTS raw.district_grid_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -207,7 +209,7 @@ CREATE TABLE IF NOT EXISTS raw_district_grid_data (
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS raw_moving_violation_data (
+CREATE TABLE IF NOT EXISTS raw.moving_violation_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -237,7 +239,7 @@ CREATE TABLE IF NOT EXISTS raw_moving_violation_data (
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS raw_speed_limits_data (
+CREATE TABLE IF NOT EXISTS raw.speed_limits_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -255,7 +257,7 @@ CREATE TABLE IF NOT EXISTS raw_speed_limits_data (
     ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS raw_street_rating_data (
+CREATE TABLE IF NOT EXISTS raw.street_rating_data (
     -- Socrata system metadata columns
     id                          TEXT,
     version                     TEXT,
@@ -281,7 +283,7 @@ CREATE TABLE IF NOT EXISTS raw_street_rating_data (
     ingested_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS raw_zone_map_data (
+CREATE TABLE IF NOT EXISTS raw.zone_map_data (
     -- Socrata system metadata columns
     id              TEXT,
     version         TEXT,
@@ -305,7 +307,7 @@ CREATE TABLE IF NOT EXISTS raw_zone_map_data (
     centerpoint_longitude       NUMERIC DEFAULT NULL
 );
 
-CREATE TABLE IF NOT EXISTS raw_weather_data (
+CREATE TABLE IF NOT EXISTS raw.weather_data (
     -- Source data columns
     weather_timestamp TIMESTAMP DEFAULT NULL,
     temperature_2m  NUMERIC DEFAULT NULL,

@@ -3,63 +3,63 @@ sources:
     nyc_open_data_url: https://data.cityofnewyork.us/dataset/NYC-Motor-Vehicle-Collisions/h9gi-nx95/about_data
     api_url: https://data.cityofnewyork.us/api/v3/views/h9gi-nx95/query.json
     format: JSON
-    table: raw_crash_data
+    table: raw.crash_data
     batch_size: 100_000
 
   salt_usage_data:
     nyc_open_data_url: https://data.cityofnewyork.us/City-Government/DSNY-Salt-Usage/tavr-zknk/about_data
     api_url: https://data.cityofnewyork.us/api/v3/views/tavr-zknk/query.json
     format: JSON
-    table: raw_salt_usage_data
+    table: raw.salt_usage_data
     batch_size: 10_000
 
   bike_route_data:
     nyc_open_data_url: https://data.cityofnewyork.us/dataset/New-York-City-Bike-Routes-Map-/9e2b-mctv
     api_url: https://data.cityofnewyork.us/api/v3/views/mzxg-pwib/query.geojson
     format: GeoJSON
-    table: raw_bike_route_data
+    table: raw.bike_route_data
     batch_size: 100_000
 
   district_grid_data:
     nyc_open_data_url: https://data.cityofnewyork.us/City-Government/DSNY-District-Map-/uqhg-h4at
     api_url: https://data.cityofnewyork.us/api/v3/views/i6mn-amj2/query.geojson
     format: GeoJSON
-    table: raw_district_grid_data
+    table: raw.district_grid_data
     batch_size: 100
 
   moving_violation_data:
     nyc_open_data_url: https://data.cityofnewyork.us/Public-Safety/Moving-Violation-B-Summons-Year-to-Date-/57p3-pdcj/about_data
     api_url: https://data.cityofnewyork.us/api/v3/views/57p3-pdcj/query.geojson
     format: GeoJSON
-    table: raw_moving_violation_data
+    table: raw.moving_violation_data
     batch_size: 100_000
 
   speed_hump_data:
     nyc_open_data_url: https://data.cityofnewyork.us/Transportation/Speed-Reducer-Tracking-System-SRTS-/9n6h-pt9g/about_data
     api_url: https://data.cityofnewyork.us/api/v3/views/9n6h-pt9g/query.json
     format: JSON
-    table: raw_speed_hump_data
+    table: raw.speed_hump_data
     batch_size: 100_000
 
   speed_limits_data:
     nyc_open_data_url: https://data.cityofnewyork.us/Transportation/VZV_Speed-Limits/7n5j-865y
     api_url: https://data.cityofnewyork.us/api/v3/views/5mad-ntua/query.geojson
     format: GeoJSON
-    table: raw_speed_limits_data
+    table: raw.speed_limits_data
     batch_size: 100_000
 
   street_rating_data:
     nyc_open_data_url: https://data.cityofnewyork.us/Transportation/Street-Pavement-Rating/6yyb-pb25/about_data
     api_url: https://data.cityofnewyork.us/api/v3/views/6yyb-pb25/query.geojson
     format: GeoJSON
-    table: raw_street_rating_data
+    table: raw.street_rating_data
     batch_size: 100_000
 
   traffic_volume_cnt_data:
     nyc_open_data_url: https://data.cityofnewyork.us/Transportation/Automated-Traffic-Volume-Counts/7ym2-wayt/about_data
     api_url: https://data.cityofnewyork.us/api/v3/views/7ym2-wayt/query.json
     format: JSON
-    table: raw_traffic_volume_cnt_data
+    table: raw.traffic_volume_cnt_data
     batch_size: 100_000
 
   weather_data:
@@ -69,11 +69,11 @@ sources:
     hourly_call_limit: 5000
     minute_call_limit: 600
     format: JSON
-    table: raw_weather_data
+    table: raw.weather_data
 
   zone_map_data:
     website_url: https://data.cityofnewyork.us/City-Government/DSNY-Zones-Map-/9ix2-uc5v
     api_url: https://data.cityofnewyork.us/api/v3/views/ak2e-nbe8/query.geojson
     format: GeoJSON
-    table: raw_zone_map_data
+    table: raw.zone_map_data
     batch_size: 10

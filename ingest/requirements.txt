@@ -21,3 +21,6 @@ shapely
 dagster
 dagster-postgres
 dagster-webserver
+dagster-dbt
+dbt-core==1.11
+dbt-postgres

@@ -6,7 +6,7 @@ MINIMAL_SOURCES_YAML = """
 sources:
   test_source:
     api_url: https://example.com/api
-    table: raw_test
+    table: raw.test
 """
 
 

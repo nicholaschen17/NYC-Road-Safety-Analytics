@@ -1,0 +1,204 @@
+
+<style>
+  *{box-sizing:border-box;font-family:var(--font-sans);color:var(--color-text-primary)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary)}
+  .topbar-title{font-size:15px;font-weight:500}
+  .topbar-sub{font-size:12px;color:var(--color-text-secondary)}
+  .body{padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+  .two-col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+  .three-col{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+  .card-header{padding:9px 12px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+  .card-sub{font-size:11px;color:var(--color-text-secondary);font-weight:400}
+  .badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500}
+  .badge-success{background:var(--color-background-success);color:var(--color-text-success)}
+  .badge-warning{background:var(--color-background-warning);color:var(--color-text-warning)}
+  .badge-info{background:var(--color-background-info);color:var(--color-text-info)}
+  .tpl-card{padding:12px;display:flex;flex-direction:column;gap:8px}
+  .tpl-icon{width:32px;height:32px;border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center}
+  .tpl-name{font-size:13px;font-weight:500}
+  .tpl-desc{font-size:11px;color:var(--color-text-secondary);line-height:1.5}
+  .tpl-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+  .tpl-cadence{font-size:11px;color:var(--color-text-secondary)}
+  .act-btn{font-size:12px;padding:5px 12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;color:var(--color-text-secondary)}
+  .act-btn:hover{background:var(--color-background-secondary)}
+  .act-btn.primary{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+  .run-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px}
+  .run-row:last-child{border-bottom:none}
+  .run-name{flex:1;font-weight:500}
+  .run-meta{color:var(--color-text-secondary);font-size:11px}
+  .export-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px}
+  .export-row:last-child{border-bottom:none}
+  .export-label{flex:1}
+  .export-desc{font-size:11px;color:var(--color-text-secondary)}
+  .fmt-pills{display:flex;gap:6px}
+  .fmt-pill{font-size:11px;padding:3px 8px;border:0.5px solid var(--color-border-secondary);border-radius:10px;cursor:pointer;color:var(--color-text-secondary)}
+  .fmt-pill:hover{background:var(--color-background-secondary)}
+  .sched-form{padding:12px;display:flex;flex-direction:column;gap:10px}
+  .form-row{display:flex;align-items:center;gap:10px;font-size:12px}
+  .form-label{color:var(--color-text-secondary);width:100px;flex-shrink:0}
+  .form-input{flex:1;font-size:12px;padding:5px 8px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+  select.form-input{cursor:pointer}
+  .divider{height:0.5px;background:var(--color-border-tertiary);margin:2px 0}
+</style>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Reporting &amp; export center</div>
+    <div class="topbar-sub">Scheduled reports · ad-hoc exports · delivery management</div>
+  </div>
+  <button class="act-btn primary" onclick="sendPrompt('Generate an executive summary report for NYC crash hotspots this month')">Generate report ↗</button>
+</div>
+
+<div class="body">
+
+  <div class="three-col">
+
+    <div class="card">
+      <div class="card-header">Executive summary <span class="badge badge-success">Scheduled</span></div>
+      <div class="tpl-card">
+        <div class="tpl-icon" style="background:var(--color-background-info)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="3" rx="1" fill="var(--color-text-info)"/><rect x="2" y="7" width="8" height="1.5" rx="0.75" fill="var(--color-text-info)" opacity="0.6"/><rect x="2" y="10" width="10" height="1.5" rx="0.75" fill="var(--color-text-info)" opacity="0.6"/><rect x="2" y="13" width="6" height="1.5" rx="0.75" fill="var(--color-text-info)" opacity="0.4"/></svg>
+        </div>
+        <div class="tpl-name">Weekly executive brief</div>
+        <div class="tpl-desc">Top 10 hotspots, borough-level summary, model accuracy, crash trend vs prior week. PDF format.</div>
+        <div class="tpl-footer">
+          <span class="tpl-cadence">Every Monday 07:00</span>
+          <button class="act-btn" onclick="sendPrompt('Run the weekly executive brief report now')">Run now</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Borough operations <span class="badge badge-success">Scheduled</span></div>
+      <div class="tpl-card">
+        <div class="tpl-icon" style="background:var(--color-background-warning)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="var(--color-text-warning)" stroke-width="1.5" fill="none"/><path d="M8 5v3.5l2 1.5" stroke="var(--color-text-warning)" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg>
+        </div>
+        <div class="tpl-name">Daily ops briefing</div>
+        <div class="tpl-desc">High-risk zones for next 24h, active alerts, weather interaction flags. Sent to borough ops leads.</div>
+        <div class="tpl-footer">
+          <span class="tpl-cadence">Daily 06:30 · all boroughs</span>
+          <button class="act-btn" onclick="sendPrompt('Run the daily ops briefing report now')">Run now</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Model performance <span class="badge badge-info">Monthly</span></div>
+      <div class="tpl-card">
+        <div class="tpl-icon" style="background:var(--color-background-success)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><polyline points="2,12 6,8 9,10 14,4" stroke="var(--color-text-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        </div>
+        <div class="tpl-name">Monthly model report</div>
+        <div class="tpl-desc">Precision, recall, AUC drift, SHAP analysis, training history, and retrain recommendations.</div>
+        <div class="tpl-footer">
+          <span class="tpl-cadence">1st of month · ML team</span>
+          <button class="act-btn" onclick="sendPrompt('Run the monthly model performance report now')">Run now</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="two-col">
+
+    <div class="card">
+      <div class="card-header">Recent report runs</div>
+      <div class="run-row">
+        <div style="flex:1"><div class="run-name">Weekly executive brief</div><div class="run-meta">Mar 17 07:01 · PDF · 3 recipients</div></div>
+        <span class="badge badge-success">Delivered</span>
+        <button class="act-btn">Download</button>
+      </div>
+      <div class="run-row">
+        <div style="flex:1"><div class="run-name">Daily ops briefing · Brooklyn</div><div class="run-meta">Mar 22 06:31 · PDF · 2 recipients</div></div>
+        <span class="badge badge-success">Delivered</span>
+        <button class="act-btn">Download</button>
+      </div>
+      <div class="run-row">
+        <div style="flex:1"><div class="run-name">Ad-hoc zone export · Grid 4812</div><div class="run-meta">Mar 20 14:12 · CSV · manual run</div></div>
+        <span class="badge badge-success">Delivered</span>
+        <button class="act-btn">Download</button>
+      </div>
+      <div class="run-row">
+        <div style="flex:1"><div class="run-name">Monthly model report</div><div class="run-meta">Mar 1 08:00 · PDF · ML team</div></div>
+        <span class="badge badge-success">Delivered</span>
+        <button class="act-btn">Download</button>
+      </div>
+      <div class="run-row">
+        <div style="flex:1"><div class="run-name">Weekly executive brief</div><div class="run-meta">Mar 10 07:01 · PDF · failed SMTP</div></div>
+        <span class="badge badge-warning">Failed</span>
+        <button class="act-btn">Retry</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Ad-hoc export</div>
+      <div class="sched-form">
+        <div class="form-row">
+          <span class="form-label">Dataset</span>
+          <select class="form-input">
+            <option>gold.crash_features</option>
+            <option>gold.env_features</option>
+            <option>silver.crashes</option>
+            <option>Risk score output (all zones)</option>
+            <option>Incident explorer (filtered view)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Date range</span>
+          <input class="form-input" type="text" value="Mar 1 – Mar 22, 2026"/>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Filter by</span>
+          <select class="form-input">
+            <option>All boroughs</option>
+            <option>Brooklyn</option>
+            <option>Manhattan</option>
+            <option>Queens</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <span class="form-label">Format</span>
+          <div class="fmt-pills">
+            <span class="fmt-pill" style="background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)">CSV</span>
+            <span class="fmt-pill">JSON</span>
+            <span class="fmt-pill">GeoJSON</span>
+            <span class="fmt-pill">Parquet</span>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:8px">
+          <button class="act-btn primary" style="flex:1" onclick="sendPrompt('Export gold.crash_features for Brooklyn March 2026 as CSV')">Export now ↗</button>
+          <button class="act-btn" style="flex:1">Schedule delivery</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="card-header">Data delivery targets <span class="card-sub">where reports are sent</span></div>
+    <div class="export-row">
+      <div><div class="export-label" style="font-weight:500">Email · DOT leadership</div><div class="export-desc">commissioner@dot.nyc.gov, deputy@dot.nyc.gov · weekly executive brief</div></div>
+      <span class="badge badge-success">Active</span>
+      <button class="act-btn">Edit</button>
+    </div>
+    <div class="export-row">
+      <div><div class="export-label" style="font-weight:500">Email · Borough ops leads</div><div class="export-desc">5 recipients · daily ops briefing · 06:30</div></div>
+      <span class="badge badge-success">Active</span>
+      <button class="act-btn">Edit</button>
+    </div>
+    <div class="export-row">
+      <div><div class="export-label" style="font-weight:500">S3 bucket · data warehouse</div><div class="export-desc">s3://nyc-crash-intelligence/exports/ · Parquet · daily gold snapshot</div></div>
+      <span class="badge badge-success">Active</span>
+      <button class="act-btn">Edit</button>
+    </div>
+    <div class="export-row">
+      <div><div class="export-label" style="font-weight:500">REST webhook · field ops app</div><div class="export-desc">GeoJSON risk scores · pushed every 6h · /api/v1/hotspots</div></div>
+      <span class="badge badge-warning">Degraded</span>
+      <button class="act-btn">Diagnose</button>
+    </div>
+  </div>
+
+</div>

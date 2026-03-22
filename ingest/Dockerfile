@@ -16,6 +16,7 @@ COPY dagster/ingest_coordination_dagster/  dagster/ingest_coordination_dagster/
 COPY sources.yml      sources.yml
 COPY dagster/workspace.yaml  workspace.yaml
 COPY dagster/dagster.yaml    dagster.yaml
+COPY transform/ ./transform/
 
 ENV PYTHONPATH="/app:/app/dagster"
 ENV DAGSTER_HOME=/app

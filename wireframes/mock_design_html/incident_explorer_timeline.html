@@ -1,0 +1,163 @@
+
+<style>
+  *{box-sizing:border-box;font-family:var(--font-sans);color:var(--color-text-primary)}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary)}
+  .topbar-title{font-size:15px;font-weight:500}
+  .topbar-sub{font-size:12px;color:var(--color-text-secondary)}
+  .filter-strip{display:flex;gap:10px;padding:10px 16px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);flex-wrap:wrap;align-items:center}
+  .filter-label{font-size:12px;color:var(--color-text-secondary)}
+  .pill{font-size:12px;padding:4px 10px;border-radius:20px;border:0.5px solid var(--color-border-secondary);cursor:pointer;background:var(--color-background-primary);color:var(--color-text-secondary)}
+  .pill.active{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+  .search-bar{flex:1;min-width:160px;font-size:12px;padding:5px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary)}
+  .body{padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+  .card-header{padding:9px 12px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:13px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+  .card-sub{font-size:11px;color:var(--color-text-secondary);font-weight:400}
+  .timeline-area{padding:12px 16px 0}
+  .chart-row{display:flex;align-items:flex-end;gap:2px;height:90px}
+  .c-bar{flex:1;border-radius:2px 2px 0 0;min-height:3px;cursor:pointer;transition:opacity 0.15s}
+  .c-bar:hover{opacity:0.75}
+  .x-labels{display:flex;justify-content:space-between;padding:4px 0 8px;font-size:10px;color:var(--color-text-secondary)}
+  .split-body{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:0}
+  .tbl{width:100%;font-size:12px;border-collapse:collapse;table-layout:fixed}
+  .tbl th{text-align:left;color:var(--color-text-secondary);font-weight:400;padding:6px 12px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:11px}
+  .tbl td{padding:7px 12px;border-bottom:0.5px solid var(--color-border-tertiary)}
+  .tbl tr:last-child td{border-bottom:none}
+  .tbl tr:hover td{background:var(--color-background-secondary);cursor:pointer}
+  .badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500}
+  .badge-danger{background:var(--color-background-danger);color:var(--color-text-danger)}
+  .badge-warning{background:var(--color-background-warning);color:var(--color-text-warning)}
+  .badge-success{background:var(--color-background-success);color:var(--color-text-success)}
+  .badge-info{background:var(--color-background-info);color:var(--color-text-info)}
+  .detail-panel{border-left:0.5px solid var(--color-border-tertiary);padding:14px;font-size:12px;min-height:340px}
+  .detail-title{font-size:13px;font-weight:500;margin-bottom:10px}
+  .detail-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+  .detail-row:last-child{border-bottom:none}
+  .detail-key{color:var(--color-text-secondary)}
+  .detail-val{font-weight:500;text-align:right}
+  .pagination{display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:0.5px solid var(--color-border-tertiary);font-size:12px;color:var(--color-text-secondary)}
+  .pg-btn{padding:3px 9px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;font-size:12px;color:var(--color-text-secondary)}
+  .pg-btn.active{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+  .summary-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--color-border-tertiary)}
+  .summary-cell{background:var(--color-background-primary);padding:10px 14px}
+  .s-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:3px}
+  .s-val{font-size:20px;font-weight:500}
+</style>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Incident explorer</div>
+    <div class="topbar-sub">214 incidents · Mar 1 – Mar 22, 2026 · All boroughs</div>
+  </div>
+  <button style="font-size:12px;padding:6px 12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;color:var(--color-text-secondary)" onclick="sendPrompt('Export the current incident explorer view as a CSV')">Export CSV</button>
+</div>
+
+<div class="filter-strip">
+  <input class="search-bar" placeholder="Search by location, type, zone ID..." type="text" style="max-width:220px"/>
+  <span class="filter-label">Severity</span>
+  <span class="pill active">All</span>
+  <span class="pill">Fatal</span>
+  <span class="pill">Injury</span>
+  <span class="pill">Property only</span>
+  <span class="filter-label" style="margin-left:4px">Borough</span>
+  <span class="pill active">All</span>
+  <span class="pill">Manhattan</span>
+  <span class="pill">Brooklyn</span>
+  <span class="pill">Queens</span>
+  <span class="filter-label" style="margin-left:4px">Conditions</span>
+  <span class="pill">Wet</span>
+  <span class="pill">Snow/ice</span>
+</div>
+
+<div class="body">
+
+  <div class="summary-strip" style="border-radius:var(--border-radius-lg);overflow:hidden;border:0.5px solid var(--color-border-tertiary)">
+    <div class="summary-cell"><div class="s-label">Total incidents</div><div class="s-val">214</div></div>
+    <div class="summary-cell"><div class="s-label">Fatalities</div><div class="s-val" style="color:var(--color-text-danger)">4</div></div>
+    <div class="summary-cell"><div class="s-label">Injuries</div><div class="s-val" style="color:var(--color-text-warning)">61</div></div>
+    <div class="summary-cell"><div class="s-label">Avg risk score (zone)</div><div class="s-val">0.62</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Daily incident count <span class="card-sub">Mar 1 – Mar 22 · bars coloured by max severity</span></div>
+    <div class="timeline-area">
+      <div class="chart-row">
+        <div class="c-bar" style="height:42%;background:#EF9F27" title="Mar 1 · 9 incidents"></div>
+        <div class="c-bar" style="height:33%;background:#888780" title="Mar 2"></div>
+        <div class="c-bar" style="height:55%;background:#E24B4A" title="Mar 3 · fatal"></div>
+        <div class="c-bar" style="height:28%;background:#888780"></div>
+        <div class="c-bar" style="height:38%;background:#EF9F27"></div>
+        <div class="c-bar" style="height:60%;background:#E24B4A"></div>
+        <div class="c-bar" style="height:45%;background:#EF9F27"></div>
+        <div class="c-bar" style="height:30%;background:#888780"></div>
+        <div class="c-bar" style="height:50%;background:#EF9F27"></div>
+        <div class="c-bar" style="height:70%;background:#E24B4A"></div>
+        <div class="c-bar" style="height:40%;background:#EF9F27"></div>
+        <div class="c-bar" style="height:35%;background:#888780"></div>
+        <div class="c-bar" style="height:55%;background:#E24B4A"></div>
+        <div class="c-bar" style="height:48%;background:#EF9F27"></div>
+        <div class="c-bar" style="height:32%;background:#888780"></div>
+        <div class="c-bar" style="height:62%;background:#E24B4A"></div>
+        <div class="c-bar" style="height:44%;background:#EF9F27"></div>
+        <div class="c-bar" style="height:37%;background:#888780"></div>
+        <div class="c-bar" style="height:80%;background:#E24B4A"></div>
+        <div class="c-bar" style="height:52%;background:#EF9F27"></div>
+        <div class="c-bar" style="height:58%;background:#E24B4A"></div>
+        <div class="c-bar" style="height:46%;background:#EF9F27"></div>
+      </div>
+      <div class="x-labels"><span>Mar 1</span><span>Mar 6</span><span>Mar 11</span><span>Mar 16</span><span>Mar 22</span></div>
+      <div style="display:flex;gap:14px;padding:0 0 10px;font-size:11px;color:var(--color-text-secondary)">
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#E24B4A;margin-right:4px"></span>Fatal/injury</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#EF9F27;margin-right:4px"></span>Minor injury</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#888780;margin-right:4px"></span>Property only</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="split-body">
+      <div>
+        <table class="tbl">
+          <thead><tr><th style="width:62px">Date</th><th>Location</th><th style="width:70px">Severity</th><th style="width:50px">Zone risk</th></tr></thead>
+          <tbody>
+            <tr onclick="sendPrompt('Show me full details for the Mar 20 fatal incident at Atlantic Ave/4th Ave')"><td>Mar 20</td><td>Atlantic Ave / 4th Ave, BK</td><td><span class="badge badge-danger">Fatal</span></td><td style="color:var(--color-text-danger)">0.91</td></tr>
+            <tr><td>Mar 20</td><td>Queens Blvd / Union Tpk, QN</td><td><span class="badge badge-danger">Injury</span></td><td style="color:var(--color-text-danger)">0.87</td></tr>
+            <tr><td>Mar 19</td><td>Grand Concourse / 161st, BX</td><td><span class="badge badge-warning">Minor</span></td><td style="color:var(--color-text-warning)">0.74</td></tr>
+            <tr><td>Mar 19</td><td>34th St / 8th Ave, MN</td><td><span class="badge badge-danger">Injury</span></td><td style="color:var(--color-text-warning)">0.67</td></tr>
+            <tr><td>Mar 18</td><td>Atlantic Ave / 4th Ave, BK</td><td><span class="badge badge-danger">Injury</span></td><td style="color:var(--color-text-danger)">0.91</td></tr>
+            <tr><td>Mar 18</td><td>Hylan Blvd / Richmond Ave, SI</td><td><span class="badge badge-warning">Minor</span></td><td style="color:var(--color-text-warning)">0.58</td></tr>
+            <tr><td>Mar 17</td><td>Flatbush Ave / Empire Blvd, BK</td><td><span class="badge badge-success">Property</span></td><td>0.44</td></tr>
+            <tr><td>Mar 16</td><td>Northern Blvd / Main St, QN</td><td><span class="badge badge-danger">Injury</span></td><td style="color:var(--color-text-warning)">0.69</td></tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <span>Showing 1–8 of 214</span>
+          <div style="flex:1"></div>
+          <button class="pg-btn active">1</button>
+          <button class="pg-btn">2</button>
+          <button class="pg-btn">3</button>
+          <span>…</span>
+          <button class="pg-btn">27</button>
+          <button class="pg-btn">→</button>
+        </div>
+      </div>
+      <div class="detail-panel">
+        <div class="detail-title">Mar 20 · Fatal · Atlantic Ave / 4th Ave</div>
+        <div class="detail-row"><span class="detail-key">Zone</span><span class="detail-val">Grid 4812 · Brooklyn</span></div>
+        <div class="detail-row"><span class="detail-key">Crash type</span><span class="detail-val">Rear-end</span></div>
+        <div class="detail-row"><span class="detail-key">Time</span><span class="detail-val">08:42 AM</span></div>
+        <div class="detail-row"><span class="detail-key">Fatalities</span><span class="detail-val" style="color:var(--color-text-danger)">1</span></div>
+        <div class="detail-row"><span class="detail-key">Injuries</span><span class="detail-val">2</span></div>
+        <div class="detail-row"><span class="detail-key">Weather</span><span class="detail-val">Wet · 38°F</span></div>
+        <div class="detail-row"><span class="detail-key">Road condition</span><span class="detail-val">Poor (2/10)</span></div>
+        <div class="detail-row"><span class="detail-key">Speed limit</span><span class="detail-val">30 mph</span></div>
+        <div class="detail-row"><span class="detail-key">Predicted risk (prior day)</span><span class="detail-val" style="color:var(--color-text-danger)">0.91 · High</span></div>
+        <div class="detail-row"><span class="detail-key">Was model alert active?</span><span class="detail-val" style="color:var(--color-text-success)">Yes</span></div>
+        <div style="margin-top:12px">
+          <button style="width:100%;font-size:12px;padding:7px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;color:var(--color-text-secondary)" onclick="sendPrompt('Drill into grid 4812 zone detail page')">Open zone detail ↗</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

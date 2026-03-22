@@ -59,7 +59,7 @@ class TestBulkInsertFromJson:
         mock_conn, mock_cursor = _make_mock_conn()
         mock_connect.return_value = mock_conn
 
-        bulk_insert_from_json(ROWS, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(ROWS, "raw.salt_usage_data", COLUMNS)
 
         mock_cursor.copy_expert.assert_called_once()
 
@@ -68,17 +68,17 @@ class TestBulkInsertFromJson:
         mock_conn, mock_cursor = _make_mock_conn()
         mock_connect.return_value = mock_conn
 
-        bulk_insert_from_json(ROWS, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(ROWS, "raw.salt_usage_data", COLUMNS)
 
         sql = mock_cursor.copy_expert.call_args[0][0]
-        assert "raw_salt_usage_data" in sql
+        assert "raw.salt_usage_data" in sql
 
     @patch("shared.db.psycopg2.connect")
     def test_sql_contains_all_columns(self, mock_connect):
         mock_conn, mock_cursor = _make_mock_conn()
         mock_connect.return_value = mock_conn
 
-        bulk_insert_from_json(ROWS, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(ROWS, "raw.salt_usage_data", COLUMNS)
 
         sql = mock_cursor.copy_expert.call_args[0][0]
         for col in COLUMNS:
@@ -95,7 +95,7 @@ class TestBulkInsertFromJson:
             captured["content"] = buf.read()
 
         mock_cursor.copy_expert.side_effect = capture
-        bulk_insert_from_json(ROWS, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(ROWS, "raw.salt_usage_data", COLUMNS)
 
         assert "Storm 1" in captured["content"]
         assert "14620" in captured["content"]
@@ -113,7 +113,7 @@ class TestBulkInsertFromJson:
             captured["content"] = buf.read()
 
         mock_cursor.copy_expert.side_effect = capture
-        bulk_insert_from_json(ROWS, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(ROWS, "raw.salt_usage_data", COLUMNS)
 
         # The first CSV line should be a data value, not a column name
         first_line = captured["content"].splitlines()[0]
@@ -132,7 +132,7 @@ class TestBulkInsertFromJson:
 
         mock_cursor.copy_expert.side_effect = capture
         rows_with_null = [{"id": "1", "storm": None, "total_tons": "10"}]
-        bulk_insert_from_json(rows_with_null, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(rows_with_null, "raw.salt_usage_data", COLUMNS)
 
         assert r"\N" in captured["content"]
 
@@ -151,7 +151,7 @@ class TestBulkInsertFromJson:
         rows_with_extra = [
             {"id": "1", "storm": "S1", "total_tons": "10", "extra": "DROP TABLE"}
         ]
-        bulk_insert_from_json(rows_with_extra, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(rows_with_extra, "raw.salt_usage_data", COLUMNS)
 
         assert "DROP TABLE" not in captured["content"]
 
@@ -160,7 +160,7 @@ class TestBulkInsertFromJson:
         mock_conn, mock_cursor = _make_mock_conn()
         mock_connect.return_value = mock_conn
 
-        bulk_insert_from_json(ROWS, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(ROWS, "raw.salt_usage_data", COLUMNS)
 
         mock_conn.commit.assert_called_once()
 
@@ -169,7 +169,7 @@ class TestBulkInsertFromJson:
         mock_conn, mock_cursor = _make_mock_conn()
         mock_connect.return_value = mock_conn
 
-        bulk_insert_from_json(ROWS, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(ROWS, "raw.salt_usage_data", COLUMNS)
 
         mock_cursor.close.assert_called_once()
         mock_conn.close.assert_called_once()
@@ -179,7 +179,7 @@ class TestBulkInsertFromJson:
         mock_conn, mock_cursor = _make_mock_conn()
         mock_connect.return_value = mock_conn
 
-        bulk_insert_from_json([], "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json([], "raw.salt_usage_data", COLUMNS)
 
         mock_cursor.copy_expert.assert_called_once()
         mock_conn.commit.assert_called_once()
@@ -195,7 +195,7 @@ class TestBulkInsertFromJson:
             captured["content"] = buf.read()
 
         mock_cursor.copy_expert.side_effect = capture
-        bulk_insert_from_json(ROWS, "raw_salt_usage_data", COLUMNS)
+        bulk_insert_from_json(ROWS, "raw.salt_usage_data", COLUMNS)
 
         lines = [l for l in captured["content"].splitlines() if l.strip()]
         assert len(lines) == len(ROWS)
