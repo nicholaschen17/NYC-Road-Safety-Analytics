@@ -1,0 +1,169 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Bronze layer: append-only tables populated by Python ingest (NYC Open Data + Open-Meteo).
+      Schema matches db/init.sql.
+    database: "{{ target.database }}"
+    schema: raw
+    tables:
+      - name: crash_data
+        description: Motor vehicle collision records (NYC Open Data).
+        columns:
+          - name: ingested_at
+            description: Audit timestamp set on ingest (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+          - name: collision_id
+            description: NYC collision identifier; use for deduplication in silver.
+        meta:
+          nyc_dataset: h9gi-nx95
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: salt_usage_data
+        description: DSNY salt usage by storm and borough (tons).
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+        meta:
+          nyc_dataset: tavr-zknk
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: bike_route_data
+        description: NYC bike route segments (GeoJSON geometry in JSONB).
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+        meta:
+          nyc_dataset: mzxg-pwib
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: district_grid_data
+        description: DSNY district polygons for spatial grid / joins.
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+        meta:
+          nyc_dataset: i6mn-amj2
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: moving_violation_data
+        description: Moving violation summons (GeoJSON geometry + lat/lon).
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+        meta:
+          nyc_dataset: 57p3-pdcj
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: speed_hump_data
+        description: Speed reducer / hump tracking (SRTS).
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+        meta:
+          nyc_dataset: 9n6h-pt9g
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: speed_limits_data
+        description: Vision Zero posted speed limits (segment geometry).
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+        meta:
+          nyc_dataset: 5mad-ntua
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: street_rating_data
+        description: Street pavement rating segments with inspection dates.
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+        meta:
+          nyc_dataset: 6yyb-pb25
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: traffic_volume_cnt_data
+        description: Automated traffic volume counts (timestamp parts + WKT geom).
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+        meta:
+          nyc_dataset: 7ym2-wayt
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: weather_data
+        description: Hourly Open-Meteo archive rows keyed by zone centerpoint lat/lon.
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+          - name: weather_timestamp
+            description: Hour bucket for the observation.
+          - name: centerpoint_latitude
+            description: Join key to zone_map_data centerpoints.
+          - name: centerpoint_longitude
+            description: Join key to zone_map_data centerpoints.
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
+
+      - name: zone_map_data
+        description: DSNY zone polygons; includes centerpoint columns for weather ingest.
+        columns:
+          - name: ingested_at
+            description: Audit timestamp (TIMESTAMPTZ NOT NULL in db/init.sql).
+            tests:
+              - not_null
+        meta:
+          nyc_dataset: ak2e-nbe8
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 96, period: hour}
