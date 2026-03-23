@@ -1,3 +1,4 @@
+[![Ingest lint](https://github.com/nicholaschen17/NYC-Road-Safety-Analytics/actions/workflows/ingest-lint.yml/badge.svg?branch=main)](https://github.com/nicholaschen17/NYC-Road-Safety-Analytics/actions/workflows/ingest-lint.yml)
 # NYC-Road-Safety-Analytics
 A crash intelligence system that identifies high-risk areas, times, and contributing factors to identify critical business questions
 
