@@ -1,0 +1,25 @@
+version: 1
+
+models:
+  - name: stg_crash_data
+    description: Typed + trimmed raw.crash_data (dedupe happens in silver.crashes).
+  - name: stg_zone_map_data
+    description: Typed raw.zone_map_data for silver.grid_zones.
+  - name: stg_district_grid_data
+    description: Typed raw.district_grid_data for silver.districts.
+  - name: stg_moving_violation_data
+    description: Typed raw.moving_violation_data.
+  - name: stg_traffic_volume_cnt_data
+    description: Typed raw.traffic_volume_cnt_data with invalid timestamp parts filtered out.
+  - name: stg_weather_data
+    description: Typed raw.weather_data.
+  - name: stg_bike_route_data
+    description: Typed raw.bike_route_data.
+  - name: stg_salt_usage_data
+    description: Typed raw.salt_usage_data (wide borough tons).
+  - name: stg_street_rating_data
+    description: Typed raw.street_rating_data.
+  - name: stg_speed_hump_data
+    description: Subset of raw.speed_hump_data used by silver.road_conditions.
+  - name: stg_speed_limits_data
+    description: Typed raw.speed_limits_data.

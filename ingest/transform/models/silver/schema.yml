@@ -1,0 +1,95 @@
+version: 1
+
+models:
+  - name: grid_zones
+    description: >
+      DSNY zone polygons + borough labels for heatmap / zone drill-down (frontend wireframes).
+      grid_cell_id is coalesce(raw id, objectid); assign crashes via PostGIS in a later model.
+    columns:
+      - name: grid_cell_id
+        tests:
+          - not_null
+          - unique
+
+  - name: districts
+    description: Cleaned district grid polygons (future spatial join to zones / points).
+    columns:
+      - name: district_grid_id
+        tests:
+          - not_null
+          - unique
+
+  - name: crashes
+    description: >
+      Deduped motor vehicle collisions (one row per collision_id). Feeds main dashboard + incident explorer.
+    columns:
+      - name: collision_id
+        tests:
+          - not_null
+          - unique
+
+  - name: weather_hourly
+    description: Hourly weather by zone centerpoint with simple null-fill columns for modeling.
+    columns:
+      - name: weather_hour_sk
+        description: Stable merge key (timestamp + rounded lat/lon).
+        tests:
+          - not_null
+          - unique
+      - name: weather_timestamp
+        tests:
+          - not_null
+
+  - name: traffic_vol_hourly
+    description: Traffic volume summed into hourly buckets by boro and segment.
+    columns:
+      - name: hour_bucket
+        tests:
+          - not_null
+      - name: boro_key
+        description: Non-null merge key; coalesce(boro, 'UNKNOWN').
+        tests:
+          - not_null
+      - name: segmentid_key
+        description: Non-null merge key; coalesce(segmentid::text, 'NULL_SEGMENT').
+        tests:
+          - not_null
+
+  - name: violations_daily
+    description: Daily violation counts by jurisdiction (aggregated silver layer).
+    columns:
+      - name: violation_day
+        tests:
+          - not_null
+      - name: jurisdiction_code
+        tests:
+          - not_null
+
+  - name: bike_route_segments
+    description: Bike routes with derived facility flags for spatial / safety context.
+    columns:
+      - name: id
+        tests:
+          - not_null
+          - unique
+
+  - name: salt_events_long
+    description: Salt usage unpivoted to storm x borough grain.
+    columns:
+      - name: salt_event_sk
+        description: Merge key from id, borough_name, storm, and report date.
+        tests:
+          - not_null
+          - unique
+      - name: borough_name
+        tests:
+          - not_null
+
+  - name: road_conditions
+    description: Union of pavement rating, speed limits, and speed hump records for infrastructure context.
+    columns:
+      - name: road_condition_sk
+        description: Merge key from condition_layer and source raw id.
+        tests:
+          - not_null
+          - unique

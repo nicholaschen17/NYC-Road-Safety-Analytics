@@ -6,7 +6,7 @@
 - raw.salt_usage_data
 - raw.bike_route_data
 - raw.district_grid_data
-- raw.moving_violations_data
+- raw.moving_violation_data
 - raw.speed_hump_data
 - raw.speed_limits_data
 - raw.street_rating_data
@@ -15,17 +15,19 @@
 - raw.zone_map_data
 
 ### Silver: Cleaned and validated data (Deduplicated, geocoded, joined, null-handled, typed)
-Key purpose: geocoding crash lat/lons to grid cells, spatial joining everything to the district grid, resampling traffic volume to hourly buckets, normalising street ratings, and flagging winter treatment events. 
+Key purpose: geocoding crash lat/lons to grid cells, spatial joining everything to the district grid, resampling traffic volume to hourly buckets, normalising street ratings, and flagging winter treatment events.
 
-Models:
-- silver.crashes (geocoded and typed)
-- silver.road_conditions (rating + humps + limits)
-- silver.weather_hourly (normalised + imputed)
-- silver.grid_zones (spatial join, indexed)
-- silver.violations (aggregated by zone)
-- silver.traffic_vol (resampled hourly)
-- silver.bike_route (route proximity flags)
-- silver.salt_events (winter treatment log)
+Silver models are **incremental tables** (`merge` strategy): each `dbt run` upserts rows by a per-model natural or surrogate unique key (see `unique_key` in each model under `models/silver/`).
+
+Models (implemented under `models/staging/` → `models/silver/` in dbt):
+- `crashes` — deduped by `collision_id`, typed; `has_coordinates` for map / incident explorer wireframes. Point-in-polygon → `grid_cell_id` is a follow-up (PostGIS).
+- `road_conditions` — union of pavement rating, posted speed limits, and speed humps for drill-down context.
+- `weather_hourly` — typed weather + simple null-fill flags for downstream features.
+- `grid_zones` + `districts` — cleaned zone/district polygons; join `borough` on `borocode`. Full district↔zone spatial join deferred.
+- `violations_daily` — daily counts by `jurisdiction_code` (export / analytics).
+- `traffic_vol_hourly` — hourly `sum(vol)` by boro + `segmentid`.
+- `bike_route_segments` — route rows + `has_protected_facility` flag.
+- `salt_events_long` — salt tons unpivoted to storm × borough (`salt_events`).
 
 ### Gold: Feature store
 Key purpose: All features are keyed on (grid_cell_id, timestamp) and exist as join key for the model. The four feature groups map cleanly to "raw" sources: crash features carry rolling counts and injury rates, env features bundle weather + road condition + salt events, traffic features combine volume with violations and speed compliance, and spatial features encode proximity to bike routes, zone type, and grid topology.
