@@ -185,22 +185,17 @@ services:
       postgres:
         condition: service_healthy
 
-  # React / Deck.gl Frontend Service
-  # Dev: run locally with `npm run dev` outside Docker
-  # Prod: uncomment this service after Day 30
-  #
-  # dashboard:
-  #   build:
-  #     context: ./dashboard
-  #     dockerfile: Dockerfile   # nginx serving built app
-  #   container_name: crash_dashboard
-  #   restart: unless-stopped
-  #   ports:
-  #     - "5173:80"
-  #   networks:
-  #     - crash_net
-  #   depends_on:
-  #     - fastapi
+  # Vite + React SPA (nginx serving production build)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: crash_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    networks:
+      - crash_net
 
   # Potential ML Pipeline service TBD
 
