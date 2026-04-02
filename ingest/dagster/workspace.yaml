@@ -1,4 +1,13 @@
+# Loaded by dagster-webserver / dagster-daemon (-w /app/workspace.yaml).
+# Modules live directly under /app (Dockerfile COPY + volume mounts). Each entry is a separate code location.
 load_from:
   - python_module:
-      module_name: ingest_coordination_dagster.definitions
-      location_name: ingest_coordination_dagster
+      module_name: job_orchestrator.definitions
+      attribute: defs
+      location_name: job_orchestrator
+      working_directory: /app
+  - python_module:
+      module_name: dbt_orchestrator.definitions
+      attribute: defs
+      location_name: dbt_orchestrator
+      working_directory: /app

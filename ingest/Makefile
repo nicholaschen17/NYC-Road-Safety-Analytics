@@ -5,13 +5,20 @@ BLACK      := venv/bin/black
 ISORT      := venv/bin/isort
 AUTOFLAKE  := venv/bin/autoflake
 BANDIT     := venv/bin/bandit
-INGEST_DIR := ingest_scripts
+JO_SRC := job-orchestrator/src
+INGEST_PKG := job_orchestrator.ingest_scripts
 
-# Make ingest/ the root for all Python imports so `shared` is always resolvable,
-# whether running via make targets or directly with `python3` from this directory.
-export PYTHONPATH := $(CURDIR)
+# ingest/ for sources.yml / tests; job-orchestrator/src for the job_orchestrator package.
+export PYTHONPATH := $(CURDIR):$(CURDIR)/$(JO_SRC)
 
 .DEFAULT_GOAL := help
+
+# ── Dagster (Compose) ─────────────────────────────────────────────────────────
+# Bind mounts update files in the container; restart processes to reload Python.
+
+.PHONY: dagster-restart
+dagster-restart: ## Restart dagster_webserver + dagster_daemon (after editing job_orchestrator on host)
+	cd .. && docker compose restart dagster_webserver dagster_daemon
 
 # ── environment ───────────────────────────────────────────────────────────────
 
@@ -28,26 +35,26 @@ install: venv ## Install all dependencies into the venv
 
 .PHONY: lint
 lint: ## Format and lint all source files (black → isort → autoflake → bandit)
-	$(BLACK)     ./ingest_scripts ./tests ./shared
-	$(ISORT)     ./ingest_scripts ./tests ./shared
-	$(AUTOFLAKE) --in-place --remove-all-unused-imports -r ./ingest_scripts ./tests ./shared
-	$(BANDIT)    -r ./ingest_scripts ./shared
+	$(BLACK)     ./$(JO_SRC)/job_orchestrator/ingest_scripts ./$(JO_SRC)/job_orchestrator/shared ./$(JO_SRC)/job_orchestrator/db ./tests
+	$(ISORT)     ./$(JO_SRC)/job_orchestrator/ingest_scripts ./$(JO_SRC)/job_orchestrator/shared ./$(JO_SRC)/job_orchestrator/db ./tests
+	$(AUTOFLAKE) --in-place --remove-all-unused-imports -r ./$(JO_SRC)/job_orchestrator/ingest_scripts ./$(JO_SRC)/job_orchestrator/shared ./$(JO_SRC)/job_orchestrator/db ./tests
+	$(BANDIT)    -r ./$(JO_SRC)/job_orchestrator/ingest_scripts ./$(JO_SRC)/job_orchestrator/shared
 
 .PHONY: black
 black: ## Format with black
-	$(BLACK) ./ingest_scripts ./tests ./shared
+	$(BLACK) ./$(JO_SRC)/job_orchestrator/ingest_scripts ./$(JO_SRC)/job_orchestrator/shared ./$(JO_SRC)/job_orchestrator/db ./tests
 
 .PHONY: isort
 isort: ## Sort imports with isort
-	$(ISORT) ./ingest_scripts ./tests ./shared
+	$(ISORT) ./$(JO_SRC)/job_orchestrator/ingest_scripts ./$(JO_SRC)/job_orchestrator/shared ./$(JO_SRC)/job_orchestrator/db ./tests
 
 .PHONY: autoflake
 autoflake: ## Remove unused imports with autoflake
-	$(AUTOFLAKE) --in-place --remove-all-unused-imports -r ./ingest_scripts ./tests ./shared
+	$(AUTOFLAKE) --in-place --remove-all-unused-imports -r ./$(JO_SRC)/job_orchestrator/ingest_scripts ./$(JO_SRC)/job_orchestrator/shared ./$(JO_SRC)/job_orchestrator/db ./tests
 
 .PHONY: bandit
 bandit: ## Run bandit security scan
-	$(BANDIT) -r ./ingest_scripts ./shared
+	$(BANDIT) -r ./$(JO_SRC)/job_orchestrator/ingest_scripts ./$(JO_SRC)/job_orchestrator/shared
 
 # ── testing ───────────────────────────────────────────────────────────────────
 
@@ -61,67 +68,67 @@ test-shared: ## Run shared/ unit tests only
 
 .PHONY: test-cov
 test-cov: ## Run tests with coverage report
-	$(PYTEST) tests/ -v --cov=shared --cov=ingest_scripts --cov-report=term-missing
+	$(PYTEST) tests/ -v --cov=job_orchestrator --cov-report=term-missing
 
 # ── ingest scripts ────────────────────────────────────────────────────────────
 
 .PHONY: ingest-all
 ingest-all: ## Run all ingest scripts sequentially
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_crash_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_salt_usage_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_weather_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_bike_route_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_district_grid_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_moving_violation_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_speed_hump_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_speed_limits_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_street_rating_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_traffic_volume_cnt_data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_zone_map_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_crash_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_salt_usage_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_weather_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_bike_route_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_district_grid_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_moving_violation_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_speed_hump_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_speed_limits_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_street_rating_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_traffic_volume_cnt_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_zone_map_data
 
 .PHONY: ingest-crash
 ingest-crash: ## Ingest NYC crash data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_crash_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_crash_data
 
 .PHONY: ingest-salt
 ingest-salt: ## Ingest NYC salt usage data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_salt_usage_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_salt_usage_data
 
 .PHONY: ingest-weather
 ingest-weather: ## Ingest NYC weather data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_weather_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_weather_data
 
 .PHONY: ingest-bike
 ingest-bike: ## Ingest NYC bike route data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_bike_route_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_bike_route_data
 
 .PHONY: ingest-district
 ingest-district: ## Ingest NYC district grid data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_district_grid_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_district_grid_data
 
 .PHONY: ingest-violations
 ingest-violations: ## Ingest NYC moving violation data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_moving_violation_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_moving_violation_data
 
 .PHONY: ingest-speed-humps
 ingest-speed-humps: ## Ingest NYC speed hump data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_speed_hump_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_speed_hump_data
 
 .PHONY: ingest-speed-limits
 ingest-speed-limits: ## Ingest NYC speed limits data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_speed_limits_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_speed_limits_data
 
 .PHONY: ingest-street-rating
 ingest-street-rating: ## Ingest NYC street rating data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_street_rating_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_street_rating_data
 
 .PHONY: ingest-traffic
 ingest-traffic: ## Ingest NYC traffic volume count data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_traffic_volume_cnt_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_traffic_volume_cnt_data
 
 .PHONY: ingest-zones
 ingest-zones: ## Ingest NYC zone map data
-	$(PYTHON) -m $(INGEST_DIR).ingest_nyc_zone_map_data
+	$(PYTHON) -m $(INGEST_PKG).ingest_nyc_zone_map_data
 
 # ── database ──────────────────────────────────────────────────────────────────
 

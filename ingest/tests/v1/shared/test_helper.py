@@ -1,6 +1,6 @@
 import pytest
 
-from shared.helper import Helper
+from job_orchestrator.shared.helper import Helper
 
 
 @pytest.fixture

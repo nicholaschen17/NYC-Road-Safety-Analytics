@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nyc-ingest"
+version = "0.1.0"
+description = "NYC Road Safety ingest (Dagster job_orchestrator + dbt_orchestrator)"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["job_orchestrator*", "dbt_orchestrator*"]

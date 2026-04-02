@@ -1,6 +1,11 @@
+"""Ensure `job_orchestrator` is importable when pytest runs outside Make."""
+
 import sys
 from pathlib import Path
 
-# Add ingest/ to sys.path so `shared` is importable as a top-level package
-# regardless of where pytest is invoked from.
-sys.path.insert(0, str(Path(__file__).parent.parent))
+_ingest_root = Path(__file__).resolve().parents[1]
+_jo_src = _ingest_root / "job-orchestrator" / "src"
+for p in (_ingest_root, _jo_src):
+    s = str(p)
+    if s not in sys.path:
+        sys.path.insert(0, s)

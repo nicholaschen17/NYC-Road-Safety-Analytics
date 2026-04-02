@@ -9,14 +9,16 @@ RUN apt-get update && \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY shared/          shared/
-COPY db/              db/
-COPY ingest_scripts/  ingest_scripts/
-COPY dagster/ingest_coordination_dagster/  dagster/ingest_coordination_dagster/
-COPY sources.yml      sources.yml
+COPY pyproject.toml .
+COPY job-orchestrator/src/job_orchestrator/ ./job_orchestrator/
+COPY job-orchestrator/src/dbt_orchestrator/ ./dbt_orchestrator/
 COPY dagster/workspace.yaml  workspace.yaml
-COPY dagster/dagster.yaml    dagster.yaml
+COPY dagster/dagster.yaml    dagster/dagster.yaml
 COPY transform/ ./transform/
 
-ENV PYTHONPATH="/app:/app/dagster"
+# Install job_orchestrator + dbt_orchestrator into site-packages so Dagster gRPC
+# code servers always resolve imports (PYTHONPATH + working_directory alone can be flaky).
+RUN pip install --no-cache-dir -e .
+
+ENV PYTHONPATH="/app"
 ENV DAGSTER_HOME=/app
