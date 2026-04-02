@@ -21,8 +21,7 @@ The **ingest Docker image** is built on **Python 3.13** (`ingest/Dockerfile`). B
 ### Docker Restart / Rebuild
 Restart:
 ```bash
-docker compose build dagster_webserver dagster_daemon
-docker compose up -d dagster_webserver dagster_daemon
+docker compose up -d --build
 ```
 
 Reload:

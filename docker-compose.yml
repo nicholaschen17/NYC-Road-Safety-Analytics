@@ -51,6 +51,17 @@ services:
       dockerfile: Dockerfile
     container_name: dagster_webserver
     restart: unless-stopped
+    # Dev bind mounts: host files appear under /app immediately, but Python already
+    # imported old code in memory. After editing .py, either:
+    #   docker compose restart dagster_webserver dagster_daemon
+    # or: make -C ingest dagster-restart
+    # In the UI try Deployment → reload code locations (may still need restart for some changes).
+    volumes:
+      - ./ingest/job-orchestrator/src/job_orchestrator:/app/job_orchestrator
+      - ./ingest/job-orchestrator/src/dbt_orchestrator:/app/dbt_orchestrator
+      - ./ingest/transform:/app/transform
+      - ./ingest/dagster/workspace.yaml:/app/workspace.yaml:ro
+      - ./ingest/dagster/dagster.yaml:/app/dagster.yaml:ro
     entrypoint:
       [
         "dagster-webserver",
@@ -60,6 +71,7 @@ services:
       ]
     environment:
       DAGSTER_HOME: /app
+      PYTHONPATH: /app
       DAGSTER_PG_HOST: dagster_postgres
       DAGSTER_PG_PORT: "5432"
       DAGSTER_PG_USER: ${DAGSTER_PG_USER}
@@ -78,6 +90,8 @@ services:
     depends_on:
       dagster_postgres:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
 
   dagster_daemon:
     build:
@@ -85,6 +99,12 @@ services:
       dockerfile: Dockerfile
     container_name: dagster_daemon
     restart: unless-stopped
+    volumes:
+      - ./ingest/job-orchestrator/src/job_orchestrator:/app/job_orchestrator
+      - ./ingest/job-orchestrator/src/dbt_orchestrator:/app/dbt_orchestrator
+      - ./ingest/transform:/app/transform
+      - ./ingest/dagster/workspace.yaml:/app/workspace.yaml:ro
+      - ./ingest/dagster/dagster.yaml:/app/dagster.yaml:ro
     entrypoint:
       [
         "dagster-daemon", "run",
@@ -92,6 +112,7 @@ services:
       ]
     environment:
       DAGSTER_HOME: /app
+      PYTHONPATH: /app
       DAGSTER_PG_HOST: dagster_postgres
       DAGSTER_PG_PORT: "5432"
       DAGSTER_PG_USER: ${DAGSTER_PG_USER}
@@ -108,26 +129,6 @@ services:
     depends_on:
       dagster_postgres:
         condition: service_healthy
-
-  # Ingest service
-  ingest:
-    build:
-      context: ./ingest
-      dockerfile: Dockerfile
-    container_name: crash_data_ingest
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      # Tokens TBD for weather API & others 
-    volumes:
-      # Parquet store for ingested weather data
-      - parquet_store:/data/parquet
-    networks:
-      - crash_net
-    depends_on:
       postgres:
         condition: service_healthy
 
@@ -161,29 +162,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Grafana service
-  grafana:
-    image: grafana/grafana:latest
-    container_name: crash_grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
-      GF_SERVER_ROOT_URL: http://localhost:3000
-      GF_INSTALL_PLUGINS: ""
-      # Postgres configured in ./grafana/provisioning/datasources/postgres.yml
-    volumes:
-      - grafana_data:/var/lib/grafana
-      # TBD create a postgres datasource yaml file in ./grafana/provisioning/datasources/postgres.yml
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-    ports:
-      - "3000:3000"
-    networks:
-      - crash_net
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   # Vite + React SPA (nginx serving production build)
   frontend:
