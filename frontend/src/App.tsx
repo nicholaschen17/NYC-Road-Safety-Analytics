@@ -17,7 +17,7 @@ export default function App() {
         <NavLink to="/incidents" className={navLinkClass}>
           Incident explorer
         </NavLink>
-        <NavLink to="/zones/4812" className={navLinkClass}>
+        <NavLink to="/zones/row-93hm-56nh~k67y" className={navLinkClass}>
           Zone drill-down
         </NavLink>
         <NavLink to="/reporting" className={navLinkClass}>

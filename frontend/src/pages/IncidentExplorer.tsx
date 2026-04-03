@@ -1,198 +1,104 @@
-import { useMemo, useState, type CSSProperties } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  fetchCrashSummary,
+  fetchCrashes,
+  fetchDailyBars,
+} from "../api/client";
+import type {
+  CrashPage,
+  CrashRow,
+  CrashSeverity,
+  CrashSummary,
+  DailyBar,
+} from "../api/types";
 
-const SEVERITY_FILTERS = [
-  "All",
-  "Fatal",
-  "Injury",
-  "Property only",
-] as const;
-const BOROUGHS = ["All", "Manhattan", "Brooklyn", "Queens"] as const;
-const CONDITION_FILTERS = ["Wet", "Snow/ice"] as const;
+const SEVERITY_FILTERS = ["All", "Fatal", "Injury", "Property only"] as const;
+const BOROUGHS = ["All", "Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"] as const;
 
-const DAILY_BARS: { h: number; bg: string; title?: string }[] = [
-  { h: 42, bg: "#EF9F27", title: "Mar 1 · 9 incidents" },
-  { h: 33, bg: "#888780", title: "Mar 2" },
-  { h: 55, bg: "#E24B4A", title: "Mar 3 · fatal" },
-  { h: 28, bg: "#888780" },
-  { h: 38, bg: "#EF9F27" },
-  { h: 60, bg: "#E24B4A" },
-  { h: 45, bg: "#EF9F27" },
-  { h: 30, bg: "#888780" },
-  { h: 50, bg: "#EF9F27" },
-  { h: 70, bg: "#E24B4A" },
-  { h: 40, bg: "#EF9F27" },
-  { h: 35, bg: "#888780" },
-  { h: 55, bg: "#E24B4A" },
-  { h: 48, bg: "#EF9F27" },
-  { h: 32, bg: "#888780" },
-  { h: 62, bg: "#E24B4A" },
-  { h: 44, bg: "#EF9F27" },
-  { h: 37, bg: "#888780" },
-  { h: 80, bg: "#E24B4A" },
-  { h: 52, bg: "#EF9F27" },
-  { h: 58, bg: "#E24B4A" },
-  { h: 46, bg: "#EF9F27" },
-];
-
-type IncidentRow = {
-  id: string;
-  date: string;
-  location: string;
-  severity: "Fatal" | "Injury" | "Minor" | "Property";
-  zoneRisk: string;
-  zoneRiskColor: "danger" | "warning" | "default";
-  gridId: string;
-};
-
-const INCIDENTS: IncidentRow[] = [
-  {
-    id: "1",
-    date: "Mar 20",
-    location: "Atlantic Ave / 4th Ave, BK",
-    severity: "Fatal",
-    zoneRisk: "0.91",
-    zoneRiskColor: "danger",
-    gridId: "4812",
-  },
-  {
-    id: "2",
-    date: "Mar 20",
-    location: "Queens Blvd / Union Tpk, QN",
-    severity: "Injury",
-    zoneRisk: "0.87",
-    zoneRiskColor: "danger",
-    gridId: "4827",
-  },
-  {
-    id: "3",
-    date: "Mar 19",
-    location: "Grand Concourse / 161st, BX",
-    severity: "Minor",
-    zoneRisk: "0.74",
-    zoneRiskColor: "warning",
-    gridId: "4808",
-  },
-  {
-    id: "4",
-    date: "Mar 19",
-    location: "34th St / 8th Ave, MN",
-    severity: "Injury",
-    zoneRisk: "0.67",
-    zoneRiskColor: "warning",
-    gridId: "4803",
-  },
-  {
-    id: "5",
-    date: "Mar 18",
-    location: "Atlantic Ave / 4th Ave, BK",
-    severity: "Injury",
-    zoneRisk: "0.91",
-    zoneRiskColor: "danger",
-    gridId: "4812",
-  },
-  {
-    id: "6",
-    date: "Mar 18",
-    location: "Hylan Blvd / Richmond Ave, SI",
-    severity: "Minor",
-    zoneRisk: "0.58",
-    zoneRiskColor: "warning",
-    gridId: "4802",
-  },
-  {
-    id: "7",
-    date: "Mar 17",
-    location: "Flatbush Ave / Empire Blvd, BK",
-    severity: "Property",
-    zoneRisk: "0.44",
-    zoneRiskColor: "default",
-    gridId: "4815",
-  },
-  {
-    id: "8",
-    date: "Mar 16",
-    location: "Northern Blvd / Main St, QN",
-    severity: "Injury",
-    zoneRisk: "0.69",
-    zoneRiskColor: "warning",
-    gridId: "4821",
-  },
-];
-
-const DETAIL_BY_ID: Record<
-  string,
-  {
-    title: string;
-    rows: { key: string; val: string; valStyle?: CSSProperties }[];
-  }
-> = {
-  "1": {
-    title: "Mar 20 · Fatal · Atlantic Ave / 4th Ave",
-    rows: [
-      { key: "Zone", val: "Grid 4812 · Brooklyn" },
-      { key: "Crash type", val: "Rear-end" },
-      { key: "Time", val: "08:42 AM" },
-      {
-        key: "Fatalities",
-        val: "1",
-        valStyle: { color: "var(--color-text-danger)" },
-      },
-      { key: "Injuries", val: "2" },
-      { key: "Weather", val: "Wet · 38°F" },
-      { key: "Road condition", val: "Poor (2/10)" },
-      { key: "Speed limit", val: "30 mph" },
-      {
-        key: "Predicted risk (prior day)",
-        val: "0.91 · High",
-        valStyle: { color: "var(--color-text-danger)" },
-      },
-      {
-        key: "Was model alert active?",
-        val: "Yes",
-        valStyle: { color: "var(--color-text-success)" },
-      },
-    ],
-  },
-};
-
-function defaultDetail(inc: IncidentRow) {
-  return {
-    title: `${inc.date} · ${inc.severity} · ${inc.location.replace(/, [A-Z]{2}$/, "")}`,
-    rows: [
-      { key: "Zone", val: `Grid ${inc.gridId}` },
-      { key: "Severity", val: inc.severity },
-      { key: "Zone risk (table)", val: inc.zoneRisk },
-    ],
-  };
-}
-
-function severityBadgeClass(s: IncidentRow["severity"]) {
+function severityBadgeClass(s: CrashSeverity) {
   if (s === "Fatal" || s === "Injury") return "badge badge-danger";
   if (s === "Minor") return "badge badge-warning";
   return "badge badge-success";
 }
 
-function riskCellStyle(c: IncidentRow["zoneRiskColor"]): CSSProperties {
-  if (c === "danger") return { color: "var(--color-text-danger)" };
-  if (c === "warning") return { color: "var(--color-text-warning)" };
+function riskCellStyle(score: number | null): CSSProperties {
+  if (!score) return {};
+  if (score >= 0.7) return { color: "var(--color-text-danger)" };
+  if (score >= 0.4) return { color: "var(--color-text-warning)" };
   return {};
+}
+
+function locationLabel(crash: CrashRow): string {
+  const parts = [crash.on_street_name, crash.cross_street_name ?? crash.off_street_name]
+    .filter(Boolean)
+    .map((s) => s!.trim());
+  if (parts.length === 0) return crash.borough ?? "Unknown";
+  const boro = crash.borough ? `, ${crash.borough.charAt(0).toUpperCase()}${crash.borough.slice(1).toLowerCase()}` : "";
+  return parts.join(" / ") + boro;
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function barColor(d: DailyBar): string {
+  if (d.fatalities > 0) return "#E24B4A";
+  if (d.injuries > 0) return "#EF9F27";
+  return "#888780";
 }
 
 export default function IncidentExplorer() {
   const [severity, setSeverity] =
     useState<(typeof SEVERITY_FILTERS)[number]>("All");
   const [borough, setBorough] = useState<(typeof BOROUGHS)[number]>("All");
-  const [conditions, setConditions] = useState<Set<string>>(new Set());
-  const [selectedId, setSelectedId] = useState("1");
   const [page, setPage] = useState(1);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  const [crashPage, setCrashPage] = useState<CrashPage | null>(null);
+  const [summary, setSummary] = useState<CrashSummary | null>(null);
+  const [dailyBars, setDailyBars] = useState<DailyBar[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const PAGE_SIZE = 20;
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      fetchCrashes({
+        page,
+        page_size: PAGE_SIZE,
+        borough: borough !== "All" ? borough : undefined,
+        severity: severity !== "All" ? severity : undefined,
+      }),
+      fetchCrashSummary(borough !== "All" ? borough : undefined),
+      fetchDailyBars(30),
+    ])
+      .then(([cp, sum, bars]) => {
+        setCrashPage(cp);
+        setSummary(sum);
+        setDailyBars(bars);
+        if (cp.items.length > 0 && selectedId === null) {
+          setSelectedId(cp.items[0].collision_id);
+        }
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [page, borough, severity]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selected = useMemo(
-    () => INCIDENTS.find((i) => i.id === selectedId) ?? INCIDENTS[0],
-    [selectedId]
+    () => crashPage?.items.find((i) => i.collision_id === selectedId) ?? crashPage?.items[0] ?? null,
+    [crashPage, selectedId]
   );
 
-  const detail = DETAIL_BY_ID[selected.id] ?? defaultDetail(selected);
+  const totalPages = crashPage ? Math.ceil(crashPage.total / PAGE_SIZE) : 1;
+  const maxBarH = useMemo(
+    () => Math.max(...dailyBars.map((b) => b.crash_count), 1),
+    [dailyBars]
+  );
 
   return (
     <div className="incident-page">
@@ -200,12 +106,17 @@ export default function IncidentExplorer() {
         <div>
           <div className="topbar-title">Incident explorer</div>
           <div className="topbar-sub">
-            214 incidents · Mar 1 – Mar 22, 2026 · All boroughs
+            {summary ? `${summary.total.toLocaleString()} incidents` : "…"} ·{" "}
+            {borough !== "All" ? borough : "All boroughs"}
           </div>
         </div>
-        <button type="button" className="act-btn">
+        <a
+          href="/api/v1/export?dataset=silver.crashes&format=csv"
+          className="act-btn"
+          download
+        >
           Export CSV
-        </button>
+        </a>
       </div>
 
       <div className="filter-strip">
@@ -221,7 +132,7 @@ export default function IncidentExplorer() {
             key={s}
             type="button"
             className={`pill${severity === s ? " active" : ""}`}
-            onClick={() => setSeverity(s)}
+            onClick={() => { setSeverity(s); setPage(1); }}
           >
             {s}
           </button>
@@ -234,29 +145,9 @@ export default function IncidentExplorer() {
             key={b}
             type="button"
             className={`pill${borough === b ? " active" : ""}`}
-            onClick={() => setBorough(b)}
+            onClick={() => { setBorough(b); setPage(1); }}
           >
             {b}
-          </button>
-        ))}
-        <span className="filter-label" style={{ marginLeft: 4 }}>
-          Conditions
-        </span>
-        {CONDITION_FILTERS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            className={`pill${conditions.has(c) ? " active" : ""}`}
-            onClick={() =>
-              setConditions((prev) => {
-                const next = new Set(prev);
-                if (next.has(c)) next.delete(c);
-                else next.add(c);
-                return next;
-              })
-            }
-          >
-            {c}
           </button>
         ))}
       </div>
@@ -265,100 +156,80 @@ export default function IncidentExplorer() {
         <div className="summary-strip">
           <div className="summary-cell">
             <div className="s-label">Total incidents</div>
-            <div className="s-val">214</div>
+            <div className="s-val">{loading ? "…" : (summary?.total.toLocaleString() ?? "—")}</div>
           </div>
           <div className="summary-cell">
             <div className="s-label">Fatalities</div>
             <div className="s-val" style={{ color: "var(--color-text-danger)" }}>
-              4
+              {loading ? "…" : (summary?.fatalities ?? "—")}
             </div>
           </div>
           <div className="summary-cell">
             <div className="s-label">Injuries</div>
-            <div
-              className="s-val"
-              style={{ color: "var(--color-text-warning)" }}
-            >
-              61
+            <div className="s-val" style={{ color: "var(--color-text-warning)" }}>
+              {loading ? "…" : (summary?.injuries ?? "—")}
             </div>
           </div>
           <div className="summary-cell">
-            <div className="s-label">Avg risk score (zone)</div>
-            <div className="s-val">0.62</div>
+            <div className="s-label">Pedestrian injuries</div>
+            <div className="s-val">{loading ? "…" : (summary?.pedestrian_injuries ?? "—")}</div>
+          </div>
+          <div className="summary-cell">
+            <div className="s-label">Cyclist injuries</div>
+            <div className="s-val">{loading ? "…" : (summary?.cyclist_injuries ?? "—")}</div>
           </div>
         </div>
+
+        {error && (
+          <div style={{ padding: "8px 14px", color: "var(--color-text-danger)", fontSize: 12 }}>
+            {error}
+          </div>
+        )}
 
         <div className="card">
           <div className="card-header">
             Daily incident count{" "}
-            <span className="card-sub">
-              Mar 1 – Mar 22 · bars coloured by max severity
-            </span>
+            <span className="card-sub">last 30 days · bars coloured by max severity</span>
           </div>
           <div className="timeline-area">
             <div className="chart-row">
-              {DAILY_BARS.map((bar, i) => (
+              {dailyBars.map((bar) => (
                 <div
-                  key={i}
+                  key={bar.day}
                   className="c-bar"
-                  style={{ height: `${bar.h}%`, background: bar.bg }}
-                  title={bar.title}
+                  style={{
+                    height: `${Math.round((bar.crash_count / maxBarH) * 100)}%`,
+                    background: barColor(bar),
+                  }}
+                  title={`${bar.day} · ${bar.crash_count} incidents`}
                 />
               ))}
             </div>
             <div className="x-labels">
-              <span>Mar 1</span>
-              <span>Mar 6</span>
-              <span>Mar 11</span>
-              <span>Mar 16</span>
-              <span>Mar 22</span>
+              {dailyBars.length > 0 && (
+                <>
+                  <span>{formatDate(dailyBars[0].day)}</span>
+                  {dailyBars.length > 10 && (
+                    <span>{formatDate(dailyBars[Math.floor(dailyBars.length / 3)].day)}</span>
+                  )}
+                  {dailyBars.length > 20 && (
+                    <span>{formatDate(dailyBars[Math.floor((dailyBars.length * 2) / 3)].day)}</span>
+                  )}
+                  <span>{formatDate(dailyBars[dailyBars.length - 1].day)}</span>
+                </>
+              )}
             </div>
-            <div
-              style={{
-                display: "flex",
-                gap: 14,
-                padding: "0 0 10px",
-                fontSize: 11,
-                color: "var(--color-text-secondary)",
-              }}
-            >
+            <div style={{ display: "flex", gap: 14, padding: "0 0 10px", fontSize: 11, color: "var(--color-text-secondary)" }}>
               <span>
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 8,
-                    height: 8,
-                    borderRadius: 2,
-                    background: "#E24B4A",
-                    marginRight: 4,
-                  }}
-                />
+                <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#E24B4A", marginRight: 4 }} />
                 Fatal/injury
               </span>
               <span>
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 8,
-                    height: 8,
-                    borderRadius: 2,
-                    background: "#EF9F27",
-                    marginRight: 4,
-                  }}
-                />
+                <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#EF9F27", marginRight: 4 }} />
                 Minor injury
               </span>
               <span>
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 8,
-                    height: 8,
-                    borderRadius: 2,
-                    background: "#888780",
-                    marginRight: 4,
-                  }}
-                />
+                <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: "#888780", marginRight: 4 }} />
                 Property only
               </span>
             </div>
@@ -371,87 +242,119 @@ export default function IncidentExplorer() {
               <table className="tbl">
                 <thead>
                   <tr>
-                    <th style={{ width: 62 }}>Date</th>
+                    <th style={{ width: 70 }}>Date</th>
                     <th>Location</th>
-                    <th style={{ width: 70 }}>Severity</th>
-                    <th style={{ width: 50 }}>Zone risk</th>
+                    <th style={{ width: 80 }}>Severity</th>
+                    <th style={{ width: 60 }}>Injuries</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {INCIDENTS.map((row) => (
+                  {loading && (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: "center", color: "var(--color-text-secondary)", padding: 16 }}>
+                        Loading…
+                      </td>
+                    </tr>
+                  )}
+                  {(crashPage?.items ?? []).map((row) => (
                     <tr
-                      key={row.id}
-                      onClick={() => setSelectedId(row.id)}
+                      key={row.collision_id}
+                      onClick={() => setSelectedId(row.collision_id)}
                       style={{
-                        outline:
-                          selectedId === row.id
-                            ? "2px solid var(--color-border-info)"
-                            : undefined,
+                        outline: selectedId === row.collision_id
+                          ? "2px solid var(--color-border-info)"
+                          : undefined,
                         outlineOffset: -2,
+                        cursor: "pointer",
                       }}
                     >
-                      <td>{row.date}</td>
-                      <td>{row.location}</td>
+                      <td>{formatDate(row.crash_date)}</td>
+                      <td>{locationLabel(row)}</td>
                       <td>
                         <span className={severityBadgeClass(row.severity)}>
-                          {row.severity === "Property" ? "Property" : row.severity}
+                          {row.severity}
                         </span>
                       </td>
-                      <td style={riskCellStyle(row.zoneRiskColor)}>
-                        {row.zoneRisk}
+                      <td style={riskCellStyle(row.persons_injured > 0 ? 0.8 : null)}>
+                        {row.persons_injured}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <div className="pagination">
-                <span>Showing 1–8 of 214</span>
+                <span>
+                  Showing {crashPage ? ((page - 1) * PAGE_SIZE + 1) : 0}–
+                  {crashPage ? Math.min(page * PAGE_SIZE, crashPage.total) : 0} of{" "}
+                  {crashPage?.total.toLocaleString() ?? "…"}
+                </span>
                 <div style={{ flex: 1 }} />
-                {[1, 2, 3].map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    className={`pg-btn${page === p ? " active" : ""}`}
-                    onClick={() => setPage(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-                <span>…</span>
-                <button type="button" className="pg-btn">
-                  27
+                <button
+                  type="button"
+                  className="pg-btn"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  ←
                 </button>
-                <button type="button" className="pg-btn">
+                {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                  const p = Math.max(1, Math.min(page - 1 + i, totalPages - 2 + i));
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      className={`pg-btn${page === p ? " active" : ""}`}
+                      onClick={() => setPage(p)}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+                {totalPages > 3 && <span>…</span>}
+                {totalPages > 3 && (
+                  <button
+                    type="button"
+                    className="pg-btn"
+                    onClick={() => setPage(totalPages)}
+                  >
+                    {totalPages}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="pg-btn"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
                   →
                 </button>
               </div>
             </div>
-            <div className="detail-panel">
-              <div className="detail-title">{detail.title}</div>
-              {detail.rows.map((r) => (
-                <div key={r.key} className="detail-row">
-                  <span className="detail-key">{r.key}</span>
-                  <span className="detail-val" style={r.valStyle}>
-                    {r.val}
-                  </span>
+
+            {selected && (
+              <div className="detail-panel">
+                <div className="detail-title">
+                  {formatDate(selected.crash_date)} · {selected.severity} · {locationLabel(selected)}
                 </div>
-              ))}
-              <div style={{ marginTop: 12 }}>
-                <Link
-                  to={`/zones/${selected.gridId}`}
-                  className="act-btn"
-                  style={{
-                    width: "100%",
-                    display: "block",
-                    textAlign: "center",
-                    textDecoration: "none",
-                    padding: "7px",
-                  }}
-                >
-                  Open zone detail ↗
-                </Link>
+                {[
+                  { key: "Borough", val: selected.borough ?? "—" },
+                  { key: "On street", val: selected.on_street_name ?? "—" },
+                  { key: "Cross street", val: selected.cross_street_name ?? selected.off_street_name ?? "—" },
+                  { key: "Time", val: selected.crash_time ?? "—" },
+                  { key: "Fatalities", val: String(selected.persons_killed), valStyle: selected.persons_killed > 0 ? { color: "var(--color-text-danger)" } as CSSProperties : undefined },
+                  { key: "Injuries", val: String(selected.persons_injured) },
+                  { key: "Pedestrians injured", val: String(selected.pedestrians_injured) },
+                  { key: "Cyclists injured", val: String(selected.cyclists_injured) },
+                  { key: "Motorists injured", val: String(selected.motorists_injured) },
+                  { key: "Severity", val: selected.severity, valStyle: selected.severity === "Fatal" ? { color: "var(--color-text-danger)" } as CSSProperties : undefined },
+                ].map((r) => (
+                  <div key={r.key} className="detail-row">
+                    <span className="detail-key">{r.key}</span>
+                    <span className="detail-val" style={r.valStyle}>{r.val}</span>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import itertools
 import json
 from decimal import Decimal
 
@@ -6,6 +7,17 @@ import psycopg2
 import psycopg2.extras
 import requests
 from job_orchestrator.shared.config import Config
+
+# Rows scanned upfront to discover the full column set from sparse JSON.
+# Socrata omits keys entirely for NULL fields, so we need a sample large
+# enough to observe optional columns (e.g. borough, latitude) which may be
+# absent from the first few records.
+_SCHEMA_DISCOVERY_ROWS = 5_000
+
+# Max rows per individual SQL INSERT statement.  Decoupled from batch_size
+# (which controls commit frequency) so we never send a single statement large
+# enough to crash the server.
+_SQL_PAGE_SIZE = 1_000
 
 
 class NYCData:
@@ -35,44 +47,67 @@ class NYCData:
         response size), then flushes each batch via execute_values — a single
         multi-row INSERT per batch rather than one query per row.
 
-        Column names are inferred from the first row of the stream so no
-        hardcoded column list is required.
+        Column names are inferred from the union of keys across the first batch
+        rather than only the first row. Socrata uses sparse JSON — optional fields
+        like borough/latitude/longitude are omitted entirely when NULL — so
+        inferring from a single row would silently drop those columns if the first
+        record happens to have no location data.
         """
 
         row_iter = self._iter_json_rows(response)
 
-        first_row = next(row_iter, None)
-        if first_row is None:
+        # Sample the first _SCHEMA_DISCOVERY_ROWS rows to build the full column
+        # set. Socrata uses sparse JSON — optional fields like borough/latitude
+        # are omitted entirely on NULL rows, so inferring from one row alone
+        # silently drops those columns for the entire load.
+        discovery: list[dict] = []
+        all_keys: set[str] = set()
+        for row in row_iter:
+            discovery.append(row)
+            all_keys.update(k for k in row.keys() if "@" not in k)
+            if len(discovery) >= _SCHEMA_DISCOVERY_ROWS:
+                break
+
+        if not discovery:
             print("No rows to insert.")
             return
 
-        api_keys = [k for k in first_row.keys() if "@" not in k]
+        api_keys = sorted(all_keys)
         columns = [k.lstrip(":") for k in api_keys]
         col_list = ", ".join(columns)
         insert_sql = f"INSERT INTO {table} ({col_list}) VALUES %s ON CONFLICT DO NOTHING"  # nosec B608
 
+        def _serialize(v):
+            return json.dumps(v, cls=_DecimalEncoder) if isinstance(v, (dict, list)) else v
+
         conn = psycopg2.connect(**self.config.get_db_config())
         try:
-            with conn.cursor() as cursor:
-                batch = [[first_row.get(k) for k in api_keys]]
-                total = 0
-                for row in row_iter:
-                    batch.append([row.get(k) for k in api_keys])
-                    if len(batch) >= batch_size:
-                        psycopg2.extras.execute_values(
-                            cursor, insert_sql, batch, page_size=batch_size
-                        )
-                        total += len(batch)
-                        print(f"Inserted {total} rows so far...")
-                        batch = []
+            cursor = conn.cursor()
+            total = 0
+            batch: list = []
 
-                if batch:  # flush remaining rows that didn't fill a full batch
+            # Chain discovery rows back in so nothing is skipped, then stream
+            # the rest.  _SQL_PAGE_SIZE caps the SQL statement size regardless
+            # of how large each application-level batch is.
+            for row in itertools.chain(discovery, row_iter):
+                batch.append([_serialize(row.get(k)) for k in api_keys])
+                if len(batch) >= batch_size:
                     psycopg2.extras.execute_values(
-                        cursor, insert_sql, batch, page_size=batch_size
+                        cursor, insert_sql, batch, page_size=_SQL_PAGE_SIZE
                     )
+                    conn.commit()
                     total += len(batch)
+                    print(f"Inserted {total} rows so far...")
+                    batch = []
 
-            conn.commit()
+            if batch:
+                psycopg2.extras.execute_values(
+                    cursor, insert_sql, batch, page_size=_SQL_PAGE_SIZE
+                )
+                conn.commit()
+                total += len(batch)
+
+            cursor.close()
             print(f"Done. Inserted {total} total rows into '{table}'.")
         except Exception:
             conn.rollback()
@@ -105,26 +140,28 @@ class NYCData:
 
         conn = psycopg2.connect(**self.config.get_db_config())
         try:
-            with conn.cursor() as cursor:
-                batch = [[first_row.get(k) for k in api_keys]]
-                total = 0
-                for row in row_iter:
-                    batch.append([row.get(k) for k in api_keys])
-                    if len(batch) >= batch_size:
-                        psycopg2.extras.execute_values(
-                            cursor, insert_sql, batch, page_size=batch_size
-                        )
-                        total += len(batch)
-                        print(f"Inserted {total} rows so far...")
-                        batch = []
-
-                if batch:  # flush remaining rows that didn't fill a full batch
+            cursor = conn.cursor()
+            total = 0
+            batch = [[first_row.get(k) for k in api_keys]]
+            for row in row_iter:
+                batch.append([row.get(k) for k in api_keys])
+                if len(batch) >= _SQL_PAGE_SIZE:
                     psycopg2.extras.execute_values(
-                        cursor, insert_sql, batch, page_size=batch_size
+                        cursor, insert_sql, batch, page_size=_SQL_PAGE_SIZE
                     )
+                    conn.commit()
                     total += len(batch)
+                    print(f"Inserted {total} rows so far...")
+                    batch = []
 
-            conn.commit()
+            if batch:
+                psycopg2.extras.execute_values(
+                    cursor, insert_sql, batch, page_size=_SQL_PAGE_SIZE
+                )
+                conn.commit()
+                total += len(batch)
+
+            cursor.close()
             print(f"Done. Inserted {total} total rows into '{table}'.")
         except Exception:
             conn.rollback()

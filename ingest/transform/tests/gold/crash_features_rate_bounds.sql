@@ -6,6 +6,7 @@ select grid_cell_id, hour_bucket, injury_rate_per_crash, fatality_rate_per_crash
 from {{ ref('crash_features') }}
 where
     injury_rate_per_crash < 0
-    or injury_rate_per_crash > 1
     or fatality_rate_per_crash < 0
-    or fatality_rate_per_crash > 1
+    -- optional sanity cap: a single event injuring >50 people would be extraordinary
+    or injury_rate_per_crash > 50
+    or fatality_rate_per_crash > 10

@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { fetchHotspotSummary, fetchHotspots, fetchZonesGeoJSON } from "../api/client";
+import type { HotspotRow, HotspotSummary, ZoneGeoJSON } from "../api/types";
 
 const MODES = ["Live risk", "Historical", "Forecast 24h"] as const;
 const BOROUGHS = [
@@ -13,58 +15,17 @@ const BOROUGHS = [
 const WINDOWS = ["7 days", "30 days", "90 days"] as const;
 const CONDITIONS = ["Wet road", "Snow/ice", "Peak hours"] as const;
 
-const HOTSPOTS = [
-  {
-    rank: 1,
-    name: "Atlantic Ave / 4th Ave",
-    zone: "Brooklyn · Zone 14",
-    gridId: "4812",
-    width: 90,
-    riskClass: "risk-high" as const,
-    badgeClass: "badge-danger" as const,
-    score: "0.91",
-  },
-  {
-    rank: 2,
-    name: "Queens Blvd / Union Tpk",
-    zone: "Queens · Zone 27",
-    gridId: "4827",
-    width: 85,
-    riskClass: "risk-high" as const,
-    badgeClass: "badge-danger" as const,
-    score: "0.87",
-  },
-  {
-    rank: 3,
-    name: "Grand Concourse / 161st",
-    zone: "Bronx · Zone 8",
-    gridId: "4808",
-    width: 78,
-    riskClass: "risk-high" as const,
-    badgeClass: "badge-danger" as const,
-    score: "0.81",
-  },
-  {
-    rank: 4,
-    name: "34th St / 8th Ave",
-    zone: "Manhattan · Zone 3",
-    gridId: "4803",
-    width: 64,
-    riskClass: "risk-med" as const,
-    badgeClass: "badge-warning" as const,
-    score: "0.67",
-  },
-  {
-    rank: 5,
-    name: "Hylan Blvd / Richmond",
-    zone: "Staten Is · Zone 2",
-    gridId: "4802",
-    width: 55,
-    riskClass: "risk-med" as const,
-    badgeClass: "badge-warning" as const,
-    score: "0.58",
-  },
-];
+function riskClass(score: number): "risk-high" | "risk-med" | "risk-low" {
+  if (score >= 0.7) return "risk-high";
+  if (score >= 0.4) return "risk-med";
+  return "risk-low";
+}
+
+function badgeClass(score: number) {
+  if (score >= 0.7) return "badge-danger";
+  if (score >= 0.4) return "badge-warning";
+  return "badge-success";
+}
 
 function toggleInSet<T extends string>(set: Set<T>, key: T): Set<T> {
   const next = new Set(set);
@@ -79,6 +40,83 @@ export default function HotspotDashboard() {
   const [windowDays, setWindowDays] =
     useState<(typeof WINDOWS)[number]>("7 days");
   const [conditions, setConditions] = useState<Set<string>>(new Set());
+
+  const [hotspots, setHotspots] = useState<HotspotRow[]>([]);
+  const [summary, setSummary] = useState<HotspotSummary | null>(null);
+  const [geoZones, setGeoZones] = useState<ZoneGeoJSON[]>([]);
+  const [hoveredZone, setHoveredZone] = useState<ZoneGeoJSON | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch geo zones once (static data — doesn't change with borough filter)
+  useEffect(() => {
+    fetchZonesGeoJSON().then(setGeoZones).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      fetchHotspots({ borough: borough !== "All" ? borough : undefined }),
+      fetchHotspotSummary(),
+    ])
+      .then(([hs, sum]) => {
+        setHotspots(hs);
+        setSummary(sum);
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [borough]);
+
+  // ── SVG projection helpers ────────────────────────────────────────────────
+  const W = 500, H = 400;
+  // NYC bounding box with a little padding
+  const LON_MIN = -74.26, LON_MAX = -73.69;
+  const LAT_MIN = 40.47,  LAT_MAX = 40.93;
+
+  const project = (lon: number, lat: number): [number, number] => [
+    ((lon - LON_MIN) / (LON_MAX - LON_MIN)) * W,
+    ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * H,
+  ];
+
+  const ringToD = (ring: number[][]): string =>
+    ring.map(([lon, lat], i) => {
+      const [x, y] = project(lon, lat);
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ") + " Z";
+
+  const zoneToPath = (z: ZoneGeoJSON): string => {
+    const geom = z.geometry;
+    const rings: number[][][] =
+      geom.type === "MultiPolygon"
+        ? (geom.coordinates as number[][][][]).flatMap((poly) => poly)
+        : (geom.coordinates as unknown as number[][][]);
+    return rings.map(ringToD).join(" ");
+  };
+
+  const riskFill = (score: number): string => {
+    if (score >= 0.7) return "#E24B4A";
+    if (score >= 0.4) return "#EF9F27";
+    if (score > 0)    return "#639922";
+    return "#888780";
+  };
+
+  // Merge geo zone risk scores with hotspot filter state
+  const visibleGeoZones = useMemo(() => {
+    if (borough === "All") return geoZones;
+    return geoZones.filter((z) =>
+      z.zonename.toLowerCase().includes(borough.toLowerCase()) ||
+      (borough === "Brooklyn" && z.zone.startsWith("BK")) ||
+      (borough === "Queens" && z.zone.startsWith("Q")) ||
+      (borough === "Bronx" && z.zone === "BX") ||
+      (borough === "Manhattan" && z.zone === "MN") ||
+      (borough === "Staten Island" && z.zone === "SI")
+    );
+  }, [geoZones, borough]);
+
+  const topZone = hoveredZone ?? (geoZones.length > 0
+    ? [...geoZones].sort((a, b) => b.risk_score - a.risk_score)[0]
+    : null);
 
   return (
     <div className="hotspot-dash">
@@ -155,180 +193,132 @@ export default function HotspotDashboard() {
         <div className="map-panel">
           <div className="map-header">
             <span className="map-header-title">
-              Predicted risk heatmap · NYC grid
+              Predicted risk heatmap · NYC DSNY zones
             </span>
-            <span className="panel-sub">Click a cell to inspect features</span>
+            <span className="panel-sub">
+              {hoveredZone
+                ? `${hoveredZone.zonename} · Risk ${hoveredZone.risk_score.toFixed(2)} · ${hoveredZone.crash_count_7d} crashes 7d`
+                : "Hover a zone to inspect"}
+            </span>
           </div>
           <div className="map-body">
+            {/* Real NYC zone map projected from GeoJSON */}
             <svg
-              className="map-grid"
-              width="100%"
-              height="100%"
-              style={{ position: "absolute", inset: 0, opacity: 0.18 }}
-            >
-              <defs>
-                <pattern
-                  id="grid"
-                  width={24}
-                  height={24}
-                  patternUnits="userSpaceOnUse"
-                >
-                  <path
-                    d="M 24 0 L 0 0 0 24"
-                    fill="none"
-                    stroke="#555"
-                    strokeWidth={0.5}
-                  />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
-            <svg
+              viewBox={`0 0 ${W} ${H}`}
+              preserveAspectRatio="xMidYMid meet"
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-              preserveAspectRatio="none"
-              viewBox="0 0 400 320"
             >
-              <path
-                d="M80,60 L180,40 L260,70 L280,140 L220,200 L160,210 L90,170 Z"
-                fill="none"
-                stroke="#aaa8a0"
-                strokeWidth={1}
-                opacity={0.5}
-              />
-              <path
-                d="M160,210 L280,140 L340,180 L370,260 L300,310 L210,300 Z"
-                fill="none"
-                stroke="#aaa8a0"
-                strokeWidth={1}
-                opacity={0.5}
-              />
-              <path
-                d="M280,140 L400,90 L460,130 L440,200 L370,260 Z"
-                fill="none"
-                stroke="#aaa8a0"
-                strokeWidth={1}
-                opacity={0.5}
-              />
+              <rect width={W} height={H} fill="var(--color-background-secondary, #1a1a1a)" />
+
+              {/* Zone polygons */}
+              {geoZones.map((z) => {
+                const fill = riskFill(z.risk_score);
+                const isHovered = hoveredZone?.grid_cell_id === z.grid_cell_id;
+                const isDimmed = borough !== "All" && !visibleGeoZones.includes(z);
+                return (
+                  <g key={z.grid_cell_id}>
+                    <path
+                      d={zoneToPath(z)}
+                      fill={fill}
+                      fillOpacity={isDimmed ? 0.06 : isHovered ? 0.55 : 0.28}
+                      stroke={fill}
+                      strokeWidth={isHovered ? 1.5 : 0.6}
+                      strokeOpacity={isDimmed ? 0.2 : 0.7}
+                      style={{ cursor: "pointer", transition: "fill-opacity 0.15s" }}
+                      onMouseEnter={() => setHoveredZone(z)}
+                      onMouseLeave={() => setHoveredZone(null)}
+                    />
+                  </g>
+                );
+              })}
+
+              {/* Centroid labels */}
+              {geoZones.map((z) => {
+                const [cx, cy] = project(z.centroid_lon, z.centroid_lat);
+                const isDimmed = borough !== "All" && !visibleGeoZones.includes(z);
+                if (isDimmed) return null;
+                return (
+                  <g key={`label-${z.grid_cell_id}`} style={{ pointerEvents: "none" }}>
+                    <text
+                      x={cx}
+                      y={cy - 6}
+                      textAnchor="middle"
+                      fontSize={9}
+                      fontFamily="sans-serif"
+                      fontWeight={600}
+                      fill="#fff"
+                      opacity={0.85}
+                    >
+                      {z.zonename}
+                    </text>
+                    <text
+                      x={cx}
+                      y={cy + 7}
+                      textAnchor="middle"
+                      fontSize={8}
+                      fontFamily="sans-serif"
+                      fill="#fff"
+                      opacity={0.6}
+                    >
+                      {z.crash_count_7d} crashes 7d
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* Tooltip callout for hovered / top zone */}
+              {topZone && (() => {
+                const [cx, cy] = project(topZone.centroid_lon, topZone.centroid_lat);
+                const bx = Math.min(cx + 10, W - 145);
+                const by = Math.max(cy - 70, 4);
+                const fill = riskFill(topZone.risk_score);
+                return (
+                  <g style={{ pointerEvents: "none" }}>
+                    <line x1={cx} y1={cy} x2={bx + 4} y2={by + 30} stroke={fill} strokeWidth={1} opacity={0.6} />
+                    <rect x={bx} y={by} width={140} height={58} rx={4}
+                      fill="var(--color-background-primary, #111)" opacity={0.92}
+                      stroke={fill} strokeWidth={0.8}
+                    />
+                    <text x={bx + 8} y={by + 14} fontSize={9.5} fontWeight={600} fill="#fff" fontFamily="sans-serif">
+                      {topZone.zonename}
+                    </text>
+                    <text x={bx + 8} y={by + 27} fontSize={8.5} fill="#aaa" fontFamily="sans-serif">
+                      Risk score{" "}
+                      <tspan fill={fill} fontWeight={600}>{topZone.risk_score.toFixed(2)}</tspan>
+                    </text>
+                    <text x={bx + 8} y={by + 40} fontSize={8.5} fill="#aaa" fontFamily="sans-serif">
+                      Crashes 7d: {topZone.crash_count_7d}
+                    </text>
+                    <text x={bx + 8} y={by + 52} fontSize={8.5} fill="#aaa" fontFamily="sans-serif">
+                      Injuries 7d: {topZone.injuries_7d}
+                    </text>
+                  </g>
+                );
+              })()}
             </svg>
-            <div
-              className="heat-dot"
-              style={{
-                width: 52,
-                height: 52,
-                background: "radial-gradient(circle,#E24B4A,transparent)",
-                top: 80,
-                left: 190,
-              }}
-            />
-            <div
-              className="heat-dot"
-              style={{
-                width: 44,
-                height: 44,
-                background: "radial-gradient(circle,#E24B4A,transparent)",
-                top: 130,
-                left: 230,
-              }}
-            />
-            <div
-              className="heat-dot"
-              style={{
-                width: 38,
-                height: 38,
-                background: "radial-gradient(circle,#EF9F27,transparent)",
-                top: 55,
-                left: 135,
-              }}
-            />
-            <div
-              className="heat-dot"
-              style={{
-                width: 34,
-                height: 34,
-                background: "radial-gradient(circle,#EF9F27,transparent)",
-                top: 170,
-                left: 160,
-              }}
-            />
-            <div
-              className="heat-dot"
-              style={{
-                width: 28,
-                height: 28,
-                background: "radial-gradient(circle,#EF9F27,transparent)",
-                top: 200,
-                left: 290,
-              }}
-            />
-            <div
-              className="heat-dot"
-              style={{
-                width: 24,
-                height: 24,
-                background: "radial-gradient(circle,#639922,transparent)",
-                top: 250,
-                left: 100,
-              }}
-            />
-            <div
-              className="heat-dot"
-              style={{
-                width: 44,
-                height: 44,
-                background: "radial-gradient(circle,#E24B4A,transparent)",
-                top: 60,
-                left: 310,
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                top: 82,
-                left: 192,
-                width: 24,
-                height: 24,
-                border: "2px solid #E24B4A",
-                borderRadius: 3,
-                background: "transparent",
-              }}
-            />
-            <Link
-              to="/zones/4812"
-              style={{
-                position: "absolute",
-                top: 50,
-                left: 218,
-                background: "var(--color-background-primary)",
-                border: "0.5px solid var(--color-border-secondary)",
-                borderRadius: "var(--border-radius-md)",
-                padding: "7px 10px",
-                fontSize: 11,
-                boxShadow: "none",
-                minWidth: 130,
-                textDecoration: "none",
-                color: "inherit",
-              }}
-            >
-              <div
+
+            {/* Click-through link for top / hovered zone */}
+            {topZone && (
+              <Link
+                to={`/zones/${topZone.grid_cell_id}`}
                 style={{
-                  fontWeight: 500,
-                  fontSize: 12,
-                  marginBottom: 3,
+                  position: "absolute",
+                  bottom: 42,
+                  right: 10,
+                  background: "var(--color-background-primary)",
+                  border: "0.5px solid var(--color-border-secondary)",
+                  borderRadius: "var(--border-radius-md)",
+                  padding: "5px 10px",
+                  fontSize: 11,
+                  textDecoration: "none",
+                  color: "inherit",
+                  opacity: 0.9,
                 }}
               >
-                Grid 4812 · Midtown
-              </div>
-              <div style={{ color: "var(--color-text-secondary)" }}>
-                Risk score{" "}
-                <span style={{ color: "#E24B4A", fontWeight: 500 }}>0.87</span>
-              </div>
-              <div style={{ color: "var(--color-text-secondary)" }}>
-                Crashes 7d: 12
-              </div>
-              <div style={{ color: "var(--color-text-secondary)" }}>
-                Wet road · peak
-              </div>
-            </Link>
+                Open zone detail ↗
+              </Link>
+            )}
+
             <div className="map-legend">
               <div className="legend-row">
                 <div className="legend-dot" style={{ background: "#E24B4A" }} />
@@ -350,51 +340,80 @@ export default function HotspotDashboard() {
           <div className="metric-row">
             <div className="metric-card">
               <div className="metric-label">High-risk zones</div>
-              <div className="metric-val">38</div>
-              <div className="metric-sub metric-up">↑ 4 vs last week</div>
+              <div className="metric-val">
+                {loading ? "…" : (summary?.high_risk_zones ?? "—")}
+              </div>
+              <div className="metric-sub">
+                {summary ? `of ${summary.active_zones} active zones` : " "}
+              </div>
             </div>
             <div className="metric-card">
               <div className="metric-label">Crashes (7d)</div>
-              <div className="metric-val">214</div>
-              <div className="metric-sub metric-dn">↓ 8 vs last week</div>
+              <div className="metric-val">
+                {loading ? "…" : (summary?.total_crashes_7d ?? "—")}
+              </div>
+              <div className="metric-sub">
+                {summary ? `${summary.total_injuries_7d} injuries` : " "}
+              </div>
             </div>
           </div>
           <div className="metric-row">
+            <div className="metric-card">
+              <div className="metric-label">Fatalities (30d)</div>
+              <div className="metric-val">
+                {loading ? "…" : (summary?.total_fatalities_30d ?? "—")}
+              </div>
+              <div className="metric-sub">
+                {summary ? `${summary.total_vru_injured_30d} VRU injured` : " "}
+              </div>
+            </div>
             <div className="metric-card">
               <div className="metric-label">Model accuracy</div>
               <div className="metric-val">84%</div>
               <div className="metric-sub">Precision @ 0.5</div>
             </div>
-            <div className="metric-card">
-              <div className="metric-label">Alert zones</div>
-              <div className="metric-val">7</div>
-              <div className="metric-sub metric-up">Forecast spike 24h</div>
-            </div>
           </div>
+
+          {error && (
+            <div style={{ padding: "8px 12px", color: "var(--color-text-danger)", fontSize: 12 }}>
+              {error}
+            </div>
+          )}
 
           <div className="panel">
             <div className="panel-header">
               <span>Top hotspots</span>
               <span className="panel-sub">by predicted risk score</span>
             </div>
-            {HOTSPOTS.map((h) => (
+            {loading && (
+              <div style={{ padding: "12px 14px", color: "var(--color-text-secondary)", fontSize: 12 }}>
+                Loading…
+              </div>
+            )}
+            {hotspots.map((h, i) => (
               <Link
-                key={h.rank}
+                key={h.grid_cell_id}
                 className="hotspot-row"
-                to={`/zones/${h.gridId}`}
+                to={`/zones/${h.grid_cell_id}`}
               >
-                <span className="hs-rank">{h.rank}</span>
+                <span className="hs-rank">{i + 1}</span>
                 <div style={{ flex: 1 }}>
-                  <div className="hs-name">{h.name}</div>
-                  <div className="hs-zone">{h.zone}</div>
+                  <div className="hs-name">
+                    {h.zone_name ?? `Grid ${h.grid_cell_id}`}
+                  </div>
+                  <div className="hs-zone">
+                    {h.borough_name ?? "—"} · Zone {h.grid_cell_id}
+                  </div>
                 </div>
                 <div className="risk-bar-wrap">
                   <div
-                    className={`risk-bar ${h.riskClass}`}
-                    style={{ width: `${h.width}%` }}
+                    className={`risk-bar ${riskClass(h.risk_score)}`}
+                    style={{ width: `${Math.round(h.risk_score * 100)}%` }}
                   />
                 </div>
-                <span className={`badge ${h.badgeClass}`}>{h.score}</span>
+                <span className={`badge ${badgeClass(h.risk_score)}`}>
+                  {h.risk_score.toFixed(2)}
+                </span>
               </Link>
             ))}
           </div>
@@ -477,15 +496,10 @@ export default function HotspotDashboard() {
             className="perf-row"
             style={{ marginTop: 8, borderBottom: "none" }}
           >
-            <span
-              style={{ fontSize: 11, color: "var(--color-text-secondary)" }}
-            >
+            <span style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
               Active model
             </span>
-            <span
-              className="pill active"
-              style={{ fontSize: 11, cursor: "default" }}
-            >
+            <span className="pill active" style={{ fontSize: 11, cursor: "default" }}>
               XGBoost v2.1
             </span>
           </div>
