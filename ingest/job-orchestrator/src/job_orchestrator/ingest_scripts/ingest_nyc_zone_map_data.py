@@ -1,9 +1,8 @@
 import requests
-from shapely.geometry import shape
-
 from job_orchestrator.db.nyc_data import NYCData
 from job_orchestrator.shared.config import Config
 from job_orchestrator.shared.db import DB
+from shapely.geometry import shape
 
 
 # Function to ingest street rating data

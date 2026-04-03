@@ -1,0 +1,131 @@
+version: 1
+
+models:
+  - name: crash_features
+    description: >
+      Crash feature aggregations keyed on (grid_cell_id, hour_bucket). Provides rolling
+      crash counts, injury rates, and vulnerable road user counts for the main heatmap
+      risk score, zone drill-down injury panel, and incident explorer timeline.
+      grid_cell_id is a borough-level proxy until the PostGIS ST_Contains spatial join is wired.
+    columns:
+      - name: grid_cell_id
+        description: Zone identifier (borough proxy until PostGIS point-in-polygon join).
+        tests:
+          - not_null
+      - name: hour_bucket
+        description: Day-truncated timestamp (daily grain; upgrades to hourly once PostGIS available).
+        tests:
+          - not_null
+      - name: crash_count
+        tests:
+          - not_null
+      - name: injury_rate_per_crash
+        description: persons_injured / crash_count for the bucket.
+      - name: fatality_rate_per_crash
+        description: persons_killed / crash_count for the bucket.
+      - name: crash_count_7d
+        description: Rolling 7-day crash count (7-row window over daily buckets).
+      - name: crash_count_30d
+        description: Rolling 30-day crash count.
+      - name: injuries_7d
+        description: Rolling 7-day sum of persons_injured.
+      - name: fatalities_30d
+        description: Rolling 30-day sum of persons_killed.
+      - name: vru_injured_30d
+        description: Rolling 30-day sum of pedestrians + cyclists injured (vulnerable road user signal).
+
+  - name: env_features
+    description: >
+      Environmental features keyed on (grid_cell_id, hour_bucket). Bundles hourly weather,
+      salt treatment events, and static road infrastructure context. Feeds the main heatmap
+      weather overlay, zone drill-down env panel, and ML model env feature group.
+      Weather joined to grid_zones by exact centerpoint lat/lon; salt/road context is borough-level.
+    columns:
+      - name: grid_cell_id
+        tests:
+          - not_null
+      - name: hour_bucket
+        description: weather_timestamp from weather_hourly (hourly grain).
+        tests:
+          - not_null
+      - name: temperature_2m
+        description: Null-filled 2m temperature (°C).
+      - name: precipitation
+        description: Null-filled precipitation (mm).
+      - name: is_snow_event
+        description: True when snowfall > 0 or snow_depth > 0.
+      - name: is_heavy_rain
+        description: True when precipitation > 5mm.
+      - name: is_below_freezing
+        description: True when temperature_2m < 0°C.
+      - name: salt_treatment_active
+        description: True when any salt tonnage was recorded for this borough on this date.
+      - name: avg_pavement_rating
+        description: Borough-average pavement rating from street_rating layer.
+      - name: avg_speed_limit_mph
+        description: Borough-average posted speed limit.
+      - name: speed_hump_count
+        description: Count of speed hump installation records in the borough.
+
+  - name: traffic_features
+    description: >
+      Traffic features keyed on (grid_cell_id, hour_bucket). Combines hourly traffic volume
+      with daily moving violations. Feeds the main heatmap traffic overlay, zone drill-down
+      volume panel, and ML model traffic feature group.
+      Borough-level proxy for grid_cell_id; replace with segment-level spatial join via PostGIS.
+    columns:
+      - name: grid_cell_id
+        tests:
+          - not_null
+      - name: hour_bucket
+        tests:
+          - not_null
+      - name: total_volume
+        description: Sum of vehicle counts for the hour bucket and borough.
+      - name: segment_count
+        description: Distinct segment IDs observed in this borough-hour.
+      - name: avg_volume_per_segment
+        description: total_volume / segment_count (congestion density proxy).
+      - name: volume_24h
+        description: Rolling 24-hour total volume.
+      - name: avg_hourly_volume_7d
+        description: Rolling 7-day average hourly volume (traffic baseline).
+      - name: violations_7d
+        description: Rolling 7-day violation count (broadcast from daily grain).
+      - name: volume_vs_7d_avg
+        description: Current hour volume minus 7d baseline (congestion spike indicator).
+
+  - name: spatial_features
+    description: >
+      Static spatial features keyed on (grid_cell_id, snapshot_ts). Encodes zone topology,
+      bike infrastructure proximity, and binary safety flags. Feeds zone drill-down
+      infrastructure panel, SHAP explainability context, and heatmap polygon overlays.
+      snapshot_ts is set at model run time; append-friendly for feature versioning.
+    columns:
+      - name: grid_cell_id
+        tests:
+          - not_null
+      - name: snapshot_ts
+        description: Timestamp of the dbt run that produced this snapshot.
+        tests:
+          - not_null
+      - name: zone
+        description: DSNY zone code.
+      - name: zonename
+        description: Human-readable zone name.
+      - name: borough_name
+        description: Full borough name from borough lookup.
+      - name: zone_area_sqft
+        description: Zone polygon area in square feet.
+      - name: zone_compactness_ratio
+        description: shape_length / sqrt(shape_area) — isoperimetric compactness proxy.
+      - name: total_bike_segments
+        description: Count of bike route segments in the borough (borough-level proxy).
+      - name: protected_lane_segments
+        description: Count of segments with a protected facility class.
+      - name: protected_lane_ratio
+        description: protected_lane_segments / total_bike_segments.
+      - name: has_protected_bike_lane
+        description: True when at least one protected lane segment exists in the borough.
+      - name: has_any_bike_infrastructure
+        description: True when any bike route segment exists in the borough.

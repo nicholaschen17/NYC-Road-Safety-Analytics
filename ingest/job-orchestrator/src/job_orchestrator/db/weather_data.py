@@ -3,7 +3,6 @@ from datetime import datetime
 import pandas as pd
 import psycopg2
 import psycopg2.extras
-
 from job_orchestrator.shared.config import Config
 from job_orchestrator.shared.db import DB
 from job_orchestrator.shared.types import Zone
@@ -26,7 +25,9 @@ class WeatherData:
             FROM {self.weather_table}
             WHERE centerpoint_latitude = %s AND centerpoint_longitude = %s
         """
-        return self.db.execute(query, (zone['centerpoint_latitude'], zone['centerpoint_longitude']))[0]['most_recent_timestamp']
+        return self.db.execute(
+            query, (zone["centerpoint_latitude"], zone["centerpoint_longitude"])
+        )[0]["most_recent_timestamp"]
 
     def get_zones(self) -> list[Zone]:
         query = f"SELECT id, centerpoint_latitude, centerpoint_longitude FROM {self.zone_table}"
@@ -59,7 +60,9 @@ class WeatherData:
         conn = psycopg2.connect(**self.config.get_db_config())
         try:
             with conn.cursor() as cursor:
-                psycopg2.extras.execute_values(cursor, insert_sql, rows, page_size=10_000)
+                psycopg2.extras.execute_values(
+                    cursor, insert_sql, rows, page_size=10_000
+                )
             conn.commit()
             print(f"Inserted {len(rows)} weather rows.")
         except Exception:

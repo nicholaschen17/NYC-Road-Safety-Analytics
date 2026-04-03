@@ -12,8 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY pyproject.toml .
 COPY job-orchestrator/src/job_orchestrator/ ./job_orchestrator/
 COPY job-orchestrator/src/dbt_orchestrator/ ./dbt_orchestrator/
-COPY dagster/workspace.yaml  workspace.yaml
-COPY dagster/dagster.yaml    dagster/dagster.yaml
+COPY job-orchestrator/workspace.yaml  workspace.yaml
+COPY job-orchestrator/dagster.yaml    dagster/dagster.yaml
 COPY transform/ ./transform/
 
 # Install job_orchestrator + dbt_orchestrator into site-packages so Dagster gRPC

@@ -3,11 +3,10 @@ from datetime import date, datetime
 import openmeteo_requests
 import pandas as pd
 import requests_cache
-from retry_requests import retry
-
 from job_orchestrator.db.weather_data import WeatherData
 from job_orchestrator.shared.config import Config
 from job_orchestrator.shared.types import WeatherParam, Zone
+from retry_requests import retry
 
 
 def get_latest_weather_data_for_zone(zone: Zone) -> datetime:

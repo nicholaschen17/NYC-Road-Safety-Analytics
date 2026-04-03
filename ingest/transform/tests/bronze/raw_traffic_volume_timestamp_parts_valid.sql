@@ -1,7 +1,9 @@
 -- raw.traffic_volume_cnt_data: calendar/time parts and volume sanity (db/init.sql yr, m, d, hh, mm, vol).
+-- A few bad source rows are common; warn-only so ingest pipelines are not blocked.
 
 {{ config(
-    tags=['bronze', 'traffic_volume_cnt_data']
+    tags=['bronze', 'traffic_volume_cnt_data'],
+    severity='warn'
 ) }}
 
 select

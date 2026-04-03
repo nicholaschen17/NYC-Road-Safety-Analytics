@@ -1,11 +1,10 @@
-import ijson
 import json
 from decimal import Decimal
 
+import ijson
 import psycopg2
 import psycopg2.extras
 import requests
-
 from job_orchestrator.shared.config import Config
 
 
@@ -89,7 +88,9 @@ class NYCData:
             row["geometry"] = json.dumps(feature.get("geometry"), cls=_DecimalEncoder)
             yield row
 
-    def _bulk_insert_geojson_stream(self, response: requests.Response, table: str, batch_size: int):
+    def _bulk_insert_geojson_stream(
+        self, response: requests.Response, table: str, batch_size: int
+    ):
         row_iter = self._iter_geojson_rows(response)
 
         first_row = next(row_iter, None)

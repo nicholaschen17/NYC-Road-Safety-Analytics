@@ -2,7 +2,6 @@ import ijson
 import psycopg2
 import psycopg2.extras
 import requests
-
 from job_orchestrator.shared.config import Config
 from job_orchestrator.shared.helper import Helper
 

@@ -1,5 +1,4 @@
 import requests
-
 from job_orchestrator.db.nyc_data import NYCData
 from job_orchestrator.shared.config import Config
 

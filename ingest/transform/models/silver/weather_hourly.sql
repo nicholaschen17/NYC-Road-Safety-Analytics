@@ -1,8 +1,14 @@
-{{ config(unique_key='weather_hour_sk', tags=['silver']) }}
+{{ config(
+    tags=['silver'],
+    materialized='table',
+    on_schema_change='sync_all_columns',
+) }}
 
 -- Hourly Open-Meteo rows keyed by zone centerpoint; simple null-fill flags for downstream gold.env_features.
--- weather_hour_sk: stable merge key (avoids float equality issues on lat/lon).
--- Dedupe: re-fetches can repeat the same hour × location (merge requires one source row per key).
+-- weather_hour_sk: stable grain key (timestamp + rounded lat/lon).
+-- Table (not merge): incremental MERGE can leave orphan duplicate keys in the target if history had
+-- multiple rows per key; full rebuild each run keeps unique_weather_hourly_weather_hour_sk honest.
+-- Dedupe in SQL: re-fetches can repeat the same hour × location.
 
 with base as (
     select

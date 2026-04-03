@@ -60,8 +60,8 @@ services:
       - ./ingest/job-orchestrator/src/job_orchestrator:/app/job_orchestrator
       - ./ingest/job-orchestrator/src/dbt_orchestrator:/app/dbt_orchestrator
       - ./ingest/transform:/app/transform
-      - ./ingest/dagster/workspace.yaml:/app/workspace.yaml:ro
-      - ./ingest/dagster/dagster.yaml:/app/dagster.yaml:ro
+      - ./ingest/job-orchestrator/workspace.yaml:/app/workspace.yaml:ro
+      - ./ingest/job-orchestrator/dagster.yaml:/app/dagster.yaml:ro
     entrypoint:
       [
         "dagster-webserver",
@@ -103,8 +103,8 @@ services:
       - ./ingest/job-orchestrator/src/job_orchestrator:/app/job_orchestrator
       - ./ingest/job-orchestrator/src/dbt_orchestrator:/app/dbt_orchestrator
       - ./ingest/transform:/app/transform
-      - ./ingest/dagster/workspace.yaml:/app/workspace.yaml:ro
-      - ./ingest/dagster/dagster.yaml:/app/dagster.yaml:ro
+      - ./ingest/job-orchestrator/workspace.yaml:/app/workspace.yaml:ro
+      - ./ingest/job-orchestrator/dagster.yaml:/app/dagster.yaml:ro
     entrypoint:
       [
         "dagster-daemon", "run",

@@ -1,4 +1,9 @@
-{{ config(unique_key='grid_cell_id', tags=['silver']) }}
+{{ config(
+    unique_key='grid_cell_id',
+    tags=['silver'],
+    materialized='view',
+    on_schema_change='sync_all_columns',
+) }}
 
 -- DSNY zones: supports zone drill-down / heatmap (frontend wireframes). PostGIS spatial join to
 -- districts is a follow-up; grid_cell_id is stable from raw id/objectid.

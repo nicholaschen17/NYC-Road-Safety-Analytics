@@ -1,5 +1,4 @@
 import pytest
-
 from job_orchestrator.shared.helper import Helper
 
 

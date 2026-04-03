@@ -17,8 +17,7 @@ jobs:
         working-directory: ingest
 
     env:
-      # Matches local Makefile / Docker: `from shared.*` and `from ingest_coordination_dagster.*`
-      PYTHONPATH: ${{ github.workspace }}/ingest:${{ github.workspace }}/ingest/dagster
+      PYTHONPATH: ${{ github.workspace }}/ingest
 
     steps:
       - uses: actions/checkout@v4

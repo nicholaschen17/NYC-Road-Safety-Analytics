@@ -7,6 +7,7 @@ from dagster import (
 )
 
 from job_orchestrator.defs import assets as assets_module
+from job_orchestrator.schedules import schedules
 
 nyc_ingest_all_job = define_asset_job(
     name="nyc_ingest_all",
@@ -24,4 +25,5 @@ def defs():
     return Definitions(
         assets=load_assets_from_modules([assets_module]),
         jobs=[nyc_ingest_all_job, nyc_weather_job],
+        schedules=schedules,
     )

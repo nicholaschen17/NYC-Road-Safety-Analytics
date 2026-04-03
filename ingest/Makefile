@@ -1,10 +1,11 @@
-PYTHON     := venv/bin/python
-PIP        := venv/bin/pip
-PYTEST     := venv/bin/pytest
-BLACK      := venv/bin/black
-ISORT      := venv/bin/isort
-AUTOFLAKE  := venv/bin/autoflake
-BANDIT     := venv/bin/bandit
+VENV       ?= .venv
+PYTHON     := $(VENV)/bin/python
+PIP        := $(VENV)/bin/pip
+PYTEST     := $(VENV)/bin/pytest
+BLACK      := $(VENV)/bin/black
+ISORT      := $(VENV)/bin/isort
+AUTOFLAKE  := $(VENV)/bin/autoflake
+BANDIT     := $(VENV)/bin/bandit
 JO_SRC := job-orchestrator/src
 INGEST_PKG := job_orchestrator.ingest_scripts
 
@@ -23,8 +24,8 @@ dagster-restart: ## Restart dagster_webserver + dagster_daemon (after editing jo
 # ── environment ───────────────────────────────────────────────────────────────
 
 .PHONY: venv
-venv: ## Create virtual environment
-	python3 -m venv venv
+venv: ## Create virtual environment at $(VENV)/ (default: venv/)
+	python3 -m venv $(VENV)
 
 .PHONY: install
 install: venv ## Install all dependencies into the venv
@@ -159,7 +160,7 @@ clean: ## Remove __pycache__ and .pyc files
 
 .PHONY: clean-venv
 clean-venv: ## Remove the virtual environment entirely
-	rm -rf venv
+	rm -rf $(VENV)
 
 # ── help ──────────────────────────────────────────────────────────────────────
 

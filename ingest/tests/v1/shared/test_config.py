@@ -1,5 +1,4 @@
 import pytest
-
 from job_orchestrator.shared.config import Config
 
 MINIMAL_SOURCES_YAML = """

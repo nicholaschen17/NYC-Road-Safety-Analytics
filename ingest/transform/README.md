@@ -44,3 +44,8 @@ Models:
 
 # Wireframe
 [NYC crash hotspot dashboard wireframe](readme_resources/nyc_crash_hotspot_dashboard_wireframe.html)
+
+
+# Updating models
+When updating models, to see the changes reflected in Dagster, remove the manifest.json file in /ingest/transform/target/manifest.json
+rm -f .../ingest/transform/target/manifest.json
