@@ -8,17 +8,53 @@
 -- Crash feature aggregations. Grain: (grid_cell_id, hour_bucket).
 -- Feeds: main heatmap risk score, zone drill-down injury panel, incident explorer timeline.
 --
--- grid_cell_id is a borough-level proxy (first representative zone per borough) until the
--- PostGIS ST_Contains point-in-polygon join is wired in a later model. Replace the
--- borough_grid CTE with a spatial join on crashes.latitude/longitude once available.
+-- grid_cell_id is resolved per crash via crash_locations (PostGIS ST_Contains).
+-- Crashes without coordinates fall back to 'borough:<NAME>'.
+-- Location dimensions match crash_locations / grid_zones (zone, neighbourhood, borough_name).
+-- max() picks one value per (grid_cell_id, day); all crashes in a cell share the same labels.
 
-with crashes_daily as (
+with crashes_enriched as (
+    -- Resolve spatial grid_cell_id per collision; fall back to borough text for unlocated crashes.
     select
-        coalesce(upper(trim(borough)), 'UNKNOWN')   as borough_upper,
-        date_trunc('day', crash_date)::timestamp    as hour_bucket,
-        count(*)                                    as crash_count,
-        sum(coalesce(number_of_persons_injured, 0)) as persons_injured,
-        sum(coalesce(number_of_persons_killed, 0))  as persons_killed,
+        c.crash_date,
+        c.collision_id,
+        c.number_of_persons_injured,
+        c.number_of_persons_killed,
+        c.number_of_pedestrians_injured,
+        c.number_of_pedestrians_killed,
+        c.number_of_cyclist_injured,
+        c.number_of_cyclist_killed,
+        c.number_of_motorist_injured,
+        c.number_of_motorist_killed,
+        c.has_coordinates,
+        coalesce(
+            cl.grid_cell_id,
+            'borough:' || coalesce(upper(trim(c.borough)), 'UNKNOWN')
+        ) as grid_cell_id,
+        cl.on_street_name,
+        cl.zone,
+        cl.neighbourhood,
+        cl.district,
+        coalesce(gz.borough_name, cl.borough_name, upper(trim(c.borough))) as borough_name
+    from {{ ref('crashes') }} as c
+    left join {{ ref('crash_locations') }} as cl on c.collision_id = cl.collision_id
+    left join {{ ref('grid_zones') }} as gz on cl.grid_cell_id = gz.grid_cell_id
+    where c.crash_date is not null
+),
+
+crashes_daily as (
+    select
+        grid_cell_id,
+        date_trunc('day', crash_date)::timestamp        as hour_bucket,
+        -- location dimension: pick any representative value per zone (all identical within a grid_cell)
+        max(on_street_name) as street,
+        max(zone)           as zone,
+        max(neighbourhood)  as neighbourhood,
+        max(district)       as district,
+        max(borough_name)   as borough_name,
+        count(*)                                        as crash_count,
+        sum(coalesce(number_of_persons_injured, 0))     as persons_injured,
+        sum(coalesce(number_of_persons_killed, 0))      as persons_killed,
         sum(coalesce(number_of_pedestrians_injured, 0)) as pedestrians_injured,
         sum(coalesce(number_of_pedestrians_killed, 0))  as pedestrians_killed,
         sum(coalesce(number_of_cyclist_injured, 0))     as cyclists_injured,
@@ -26,51 +62,49 @@ with crashes_daily as (
         sum(coalesce(number_of_motorist_injured, 0))    as motorists_injured,
         sum(coalesce(number_of_motorist_killed, 0))     as motorists_killed,
         count(*) filter (where has_coordinates)         as crashes_with_coordinates
-    from {{ ref('crashes') }}
-    where crash_date is not null
+    from crashes_enriched
     group by 1, 2
-),
-
--- One representative grid_cell_id per borough (proxy until PostGIS spatial join).
-borough_grid as (
-    select distinct on (upper(trim(borough_name)))
-        upper(trim(borough_name)) as borough_upper,
-        grid_cell_id
-    from {{ ref('grid_zones') }}
-    where borough_name is not null
-    order by upper(trim(borough_name)), grid_cell_id
 ),
 
 joined as (
     select
-        coalesce(bg.grid_cell_id, 'borough:' || cd.borough_upper) as grid_cell_id,
-        cd.hour_bucket,
-        cd.crash_count,
-        cd.persons_injured,
-        cd.persons_killed,
-        cd.pedestrians_injured,
-        cd.pedestrians_killed,
-        cd.cyclists_injured,
-        cd.cyclists_killed,
-        cd.motorists_injured,
-        cd.motorists_killed,
-        cd.crashes_with_coordinates,
+        grid_cell_id,
+        hour_bucket,
+        street,
+        zone,
+        neighbourhood,
+        district,
+        borough_name,
+        crash_count,
+        persons_injured,
+        persons_killed,
+        pedestrians_injured,
+        pedestrians_killed,
+        cyclists_injured,
+        cyclists_killed,
+        motorists_injured,
+        motorists_killed,
+        crashes_with_coordinates,
         case
-            when cd.crash_count > 0 then cd.persons_injured::numeric / cd.crash_count
+            when crash_count > 0 then persons_injured::numeric / crash_count
             else 0
         end as injury_rate_per_crash,
         case
-            when cd.crash_count > 0 then cd.persons_killed::numeric / cd.crash_count
+            when crash_count > 0 then persons_killed::numeric / crash_count
             else 0
         end as fatality_rate_per_crash
-    from crashes_daily as cd
-    left join borough_grid as bg on cd.borough_upper = bg.borough_upper
+    from crashes_daily
 ),
 
 with_rolling as (
     select
         grid_cell_id,
         hour_bucket,
+        street,
+        zone,
+        neighbourhood,
+        district,
+        borough_name,
         crash_count,
         persons_injured,
         persons_killed,

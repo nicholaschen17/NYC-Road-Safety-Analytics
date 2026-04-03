@@ -11,14 +11,6 @@ models:
           - not_null
           - unique
 
-  - name: districts
-    description: Cleaned district grid polygons (future spatial join to zones / points).
-    columns:
-      - name: district_grid_id
-        tests:
-          - not_null
-          - unique
-
   - name: crashes
     description: >
       Deduped motor vehicle collisions (one row per collision_id). Feeds main dashboard + incident explorer.
@@ -84,6 +76,45 @@ models:
       - name: borough_name
         tests:
           - not_null
+
+  - name: districts
+    description: Deduped DSNY district polygons for spatial join to crashes and zones via PostGIS ST_Contains.
+    columns:
+      - name: district_grid_id
+        description: Stable merge key; coalesce(objectid, id).
+        tests:
+          - not_null
+          - unique
+
+  - name: crash_locations
+    description: >
+      One row per collision_id with full location hierarchy resolved via PostGIS ST_Contains.
+      Joins each crash point to grid_zones (zone/neighbourhood) and districts (district/districtcode).
+      Only crashes with lat/lon are included. Feeds crash_features gold model.
+    columns:
+      - name: collision_id
+        tests:
+          - not_null
+          - unique
+          - relationships:
+              to: ref('crashes')
+              field: collision_id
+      - name: latitude
+        tests:
+          - not_null
+      - name: longitude
+        tests:
+          - not_null
+      - name: grid_cell_id
+        description: Spatially-resolved zone identifier from grid_zones ST_Contains join.
+      - name: neighbourhood
+        description: DSNY zone name (zonename) — neighbourhood-level proxy.
+      - name: district
+        description: DSNY district name from districts ST_Contains join.
+      - name: districtcode
+        description: DSNY district code.
+      - name: borough_name
+        description: Full borough name from grid_zones borough lookup.
 
   - name: road_conditions
     description: Union of pavement rating, speed limits, and speed hump records for infrastructure context.

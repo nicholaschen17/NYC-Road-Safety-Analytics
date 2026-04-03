@@ -1,8 +1,10 @@
 {{ config(
-    unique_key='grid_cell_id',
     tags=['silver'],
-    materialized='view',
+    materialized='table',
     on_schema_change='sync_all_columns',
+    post_hook=[
+        "create index if not exists {{ this.identifier }}_geom_4326_gist on {{ this }} using gist (geom_4326)",
+    ],
 ) }}
 
 -- DSNY zones: supports zone drill-down / heatmap (frontend wireframes). PostGIS spatial join to
@@ -21,6 +23,7 @@ with base as (
         z.centerpoint_latitude,
         z.centerpoint_longitude,
         z.geometry,
+        {{ geojson_to_geom('z.geometry') }} as geom_4326,
         z.ingested_at,
         z.updated_at
     from {{ ref('stg_zone_map_data') }} as z
@@ -47,6 +50,7 @@ select
     centerpoint_latitude,
     centerpoint_longitude,
     geometry,
+    geom_4326,
     ingested_at
 from ranked
 where _rn = 1

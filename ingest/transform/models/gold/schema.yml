@@ -3,19 +3,30 @@ version: 1
 models:
   - name: crash_features
     description: >
-      Crash feature aggregations keyed on (grid_cell_id, hour_bucket). Provides rolling
-      crash counts, injury rates, and vulnerable road user counts for the main heatmap
-      risk score, zone drill-down injury panel, and incident explorer timeline.
-      grid_cell_id is a borough-level proxy until the PostGIS ST_Contains spatial join is wired.
+      Crash feature aggregations keyed on (grid_cell_id, hour_bucket). Rolling crash counts,
+      injury rates, and vulnerable road user counts for the heatmap, zone drill-down, and timeline.
+      Labels (zone, neighbourhood, borough_name) align with crash_locations and grid_zones.
     columns:
       - name: grid_cell_id
-        description: Zone identifier (borough proxy until PostGIS point-in-polygon join).
+        description: >
+          Spatially-resolved zone identifier from crash_locations (ST_Contains point-in-polygon).
+          Falls back to 'borough:<NAME>' for crashes without coordinates.
         tests:
           - not_null
       - name: hour_bucket
         description: Day-truncated timestamp (daily grain; upgrades to hourly once PostGIS available).
         tests:
           - not_null
+      - name: street
+        description: Representative on_street_name for the zone bucket (from crash_locations).
+      - name: zone
+        description: DSNY zone code from crash_locations (same field as grid_zones.zone).
+      - name: neighbourhood
+        description: DSNY zonename from crash_locations (grid_zones.zonename).
+      - name: district
+        description: District code from crash_locations spatial join to districts layer.
+      - name: borough_name
+        description: Full borough name resolved via grid_zones; falls back to raw borough text.
       - name: crash_count
         tests:
           - not_null

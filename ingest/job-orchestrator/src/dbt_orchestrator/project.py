@@ -34,14 +34,32 @@ def _transform_project_dir() -> Path:
     )
 
 
-def _ensure_manifest(project_dir: Path) -> None:
-    """Run `dbt parse` whenever the manifest is absent or corrupt.
+def _is_manifest_stale(project_dir: Path, manifest_path: Path) -> bool:
+    """Return True if any tracked project file is newer than the manifest.
 
-    `prepare_if_dev()` is a no-op outside of `dagster dev`, so in Docker the
-    manifest must already exist or be generated explicitly. This guard runs
-    `dbt parse` once at import time so the code server never starts without a
-    valid manifest — even after a `docker compose restart` or new model files
-    being added via the bind-mount.
+    Watches: models/**/*.sql, models/**/*.yml, dbt_project.yml, packages.yml.
+    This catches new/edited models, schema changes, and project-level config
+    without requiring a manual manifest delete.
+    """
+    manifest_mtime = manifest_path.stat().st_mtime
+    watch_patterns = ["models/**/*.sql", "models/**/*.yml", "dbt_project.yml", "packages.yml"]
+    for pattern in watch_patterns:
+        for path in project_dir.glob(pattern):
+            if path.stat().st_mtime > manifest_mtime:
+                logger.info(
+                    "Manifest stale: %s is newer than %s.", path.relative_to(project_dir), manifest_path
+                )
+                return True
+    return False
+
+
+def _ensure_manifest(project_dir: Path) -> None:
+    """Run `dbt parse` whenever the manifest is absent, corrupt, or stale.
+
+    Staleness is determined by comparing the manifest mtime against every
+    .sql and .yml file under models/ as well as dbt_project.yml. Adding or
+    editing any model/schema file will therefore trigger an automatic re-parse
+    on the next Dagster code-server start — no manual manifest deletion needed.
 
     A corrupt file (e.g. truncated by a mid-write restart) is treated the same
     as a missing file: deleted and regenerated.
@@ -49,17 +67,28 @@ def _ensure_manifest(project_dir: Path) -> None:
     import json
 
     manifest_path = project_dir / "target" / "manifest.json"
-    if manifest_path.exists():
+    needs_parse = False
+
+    if not manifest_path.exists():
+        logger.info("dbt manifest not found at %s — running `dbt parse`.", manifest_path)
+        needs_parse = True
+    else:
         try:
             json.loads(manifest_path.read_bytes())
-            return  # file exists and is valid JSON — nothing to do
         except (json.JSONDecodeError, ValueError):
             logger.warning(
                 "Corrupt manifest at %s — deleting and regenerating.", manifest_path
             )
             manifest_path.unlink(missing_ok=True)
+            needs_parse = True
 
-    logger.info("dbt manifest not found at %s — running `dbt parse`.", manifest_path)
+        if not needs_parse and _is_manifest_stale(project_dir, manifest_path):
+            logger.info("Manifest is stale — running `dbt parse` to refresh.")
+            needs_parse = True
+
+    if not needs_parse:
+        return
+
     result = subprocess.run(
         [
             "dbt", "parse",
